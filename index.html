@@ -29,20 +29,51 @@
           -ms-overflow-style: none;  /* IE and Edge */
           scrollbar-width: none;  /* Firefox */
       }
-      /* Custom Scrollbar for lists */
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
+      
+      /* GLOBAL FANCY SCROLLBAR */
+      ::-webkit-scrollbar {
+        width: 10px;   /* Vertical scrollbar width */
+        height: 10px;  /* Horizontal scrollbar height */
       }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: #1a1a1a; 
+      
+      ::-webkit-scrollbar-track {
+        background: #0a0a0a;
       }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #444; 
-        border-radius: 3px;
+      
+      ::-webkit-scrollbar-thumb {
+        background: #333; 
+        border-radius: 5px;
+        border: 2px solid #0a0a0a; /* Creates padding effect */
       }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #666; 
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #7c3aed; /* Purple hover state */
       }
+
+      /* Custom class for specific containers if needed overrides */
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #333 #0a0a0a;
+      }
+
+      /* Animation Utilities */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fade-in-up {
+        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        opacity: 0;
+      }
+      .delay-100 { animation-delay: 100ms; }
+      .delay-200 { animation-delay: 200ms; }
+      .delay-300 { animation-delay: 300ms; }
     </style>
 <script type="importmap">
 {

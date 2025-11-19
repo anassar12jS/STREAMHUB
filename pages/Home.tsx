@@ -41,26 +41,29 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
   }, []);
 
   const Row = ({ title, items, icon: Icon }: { title: string, items: TMDBResult[], icon?: React.ElementType }) => (
-    <div className="mb-10 relative z-10">
-      <div className="flex items-center gap-3 mb-5 px-4 md:px-8">
+    <div className="mb-12 relative z-10">
+      <div className="flex items-center gap-3 mb-5 px-4">
         {Icon && <Icon className="w-6 h-6 text-purple-500" />}
         <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">{title}</h2>
       </div>
-      <div className="flex overflow-x-auto space-x-4 px-4 md:px-8 pb-4 no-scrollbar scroll-smooth snap-x snap-mandatory">
+      
+      <div className="flex overflow-x-auto space-x-4 px-4 pb-4 custom-scrollbar scroll-smooth snap-x snap-mandatory">
         {items.map(item => (
           <div key={item.id} className="snap-start">
              <MediaCard item={item} onClick={onSelect} />
           </div>
         ))}
+        {/* Spacer div to ensure the last item isn't cut off by padding right logic in some browsers */}
+        <div className="w-2 shrink-0"></div>
       </div>
     </div>
   );
 
   return (
     <div className="min-h-screen pb-20 bg-[#0f0f0f] overflow-x-hidden">
-      {/* Hero Section */}
+      {/* Hero Section (Full Width) */}
       {heroItem && (
-        <div className="relative h-[85vh] w-full mb-12 group">
+        <div className="relative h-[85vh] w-full mb-16 group">
           <div className="absolute inset-0">
             <img 
               src={`${TMDB_IMAGE_BASE}${heroItem.backdrop_path}`} 
@@ -71,7 +74,7 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
             <div className="absolute inset-0 bg-gradient-to-r from-[#0f0f0f] via-[#0f0f0f]/40 to-transparent"></div>
           </div>
 
-          <div className="absolute bottom-0 left-0 w-full px-4 md:px-8 pb-16 max-w-4xl flex flex-col gap-4">
+          <div className="absolute bottom-0 left-0 w-full px-4 sm:px-8 md:px-12 pb-16 max-w-7xl mx-auto right-0 flex flex-col gap-4">
              <div className="flex items-center gap-2 animate-fade-in-up">
                 <span className="inline-flex items-center gap-1 py-1 px-3 rounded-full bg-red-600/90 backdrop-blur-sm text-white text-xs font-bold tracking-wider uppercase shadow-lg shadow-red-900/20">
                   <TrendingUp className="w-3 h-3" /> Trending #1
@@ -109,15 +112,18 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
         </div>
       )}
 
-      <div className="space-y-2">
-        <Row title="Trending Today" items={trending} icon={TrendingUp} />
-        <Row title="Popular Movies" items={movies} icon={Film} />
-        <Row title="Hit TV Series" items={series} icon={Tv} />
-        
-        <div className="my-8 border-t border-white/5" />
-        
-        <Row title="Highest Rated Movies" items={topRatedMovies} icon={Star} />
-        <Row title="Highest Rated Series" items={topRatedSeries} icon={Star} />
+      {/* Rows Container - Centered with Max Width */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-2">
+          <Row title="Trending Today" items={trending} icon={TrendingUp} />
+          <Row title="Popular Movies" items={movies} icon={Film} />
+          <Row title="Hit TV Series" items={series} icon={Tv} />
+          
+          <div className="my-12 border-t border-white/5" />
+          
+          <Row title="Highest Rated Movies" items={topRatedMovies} icon={Star} />
+          <Row title="Highest Rated Series" items={topRatedSeries} icon={Star} />
+        </div>
       </div>
     </div>
   );
