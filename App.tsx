@@ -7,13 +7,14 @@ import { Library } from './pages/Library';
 import { Sports } from './pages/Sports';
 import { Discover } from './pages/Discover';
 import { Person } from './pages/Person';
+import { DMCA, Privacy, Terms } from './pages/Legal';
 import { SettingsModal } from './components/SettingsModal';
 import { searchMedia, getDetails } from './services/tmdb';
 import { getTheme } from './services/storage';
 import { TMDBResult, MediaType } from './types';
 import { MediaCard } from './components/MediaCard';
 
-type ViewState = 'home' | 'details' | 'search' | 'library' | 'sports' | 'discover' | 'person';
+type ViewState = 'home' | 'details' | 'search' | 'library' | 'sports' | 'discover' | 'person' | 'dmca' | 'privacy' | 'terms';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('home');
@@ -68,6 +69,12 @@ const App: React.FC = () => {
         setView('sports');
       } else if (hash === '#discover') {
         setView('discover');
+      } else if (hash === '#dmca') {
+        setView('dmca');
+      } else if (hash === '#privacy') {
+        setView('privacy');
+      } else if (hash === '#terms') {
+        setView('terms');
       }
     };
     init();
@@ -90,6 +97,9 @@ const App: React.FC = () => {
         if (hash === '#library') setView('library');
         else if (hash === '#sports') setView('sports');
         else if (hash === '#discover') setView('discover');
+        else if (hash === '#dmca') setView('dmca');
+        else if (hash === '#privacy') setView('privacy');
+        else if (hash === '#terms') setView('terms');
         else if (!params.get('id')) setView('home');
       }
     };
@@ -142,6 +152,9 @@ const App: React.FC = () => {
         {view === 'sports' && <Sports />}
         {view === 'discover' && <Discover onSelect={handleSelect} />}
         {view === 'person' && selectedPersonId && <Person id={selectedPersonId} onSelect={handleSelect} onBack={handleBack} />}
+        {view === 'dmca' && <DMCA />}
+        {view === 'privacy' && <Privacy />}
+        {view === 'terms' && <Terms />}
         
         {view === 'details' && selectedItem && (
           <Details item={selectedItem} onBack={handleBack} onPersonClick={handlePersonSelect} />
@@ -164,7 +177,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <Footer />
+      <Footer onNavigate={handleNavigate} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );

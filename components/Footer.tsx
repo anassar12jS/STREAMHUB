@@ -1,7 +1,11 @@
 import React from 'react';
 import { Film, Github, Twitter, Heart } from 'lucide-react';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onNavigate: (view: string) => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="bg-black border-t border-white/10 pt-12 pb-8 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -9,8 +13,8 @@ export const Footer: React.FC = () => {
           
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 bg-gradient-to-br from-purple-600 to-blue-500 rounded-lg flex items-center justify-center">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate('home')}>
+              <div className="h-8 w-8 bg-gradient-to-br from-[rgb(var(--primary-color))] to-blue-500 rounded-lg flex items-center justify-center">
                 <Film className="h-5 w-5 text-white" />
               </div>
               <span className="font-bold text-xl tracking-tight text-white">StreamHub</span>
@@ -26,17 +30,17 @@ export const Footer: React.FC = () => {
             <div>
               <h3 className="text-white font-bold mb-4">Navigation</h3>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-purple-400 transition-colors">Home</a></li>
-                <li><a href="#" className="hover:text-purple-400 transition-colors">Popular</a></li>
-                <li><a href="#" className="hover:text-purple-400 transition-colors">New Releases</a></li>
+                <li><button onClick={() => onNavigate('home')} className="hover:text-[rgb(var(--primary-color))] transition-colors">Home</button></li>
+                <li><button onClick={() => onNavigate('discover')} className="hover:text-[rgb(var(--primary-color))] transition-colors">Discover</button></li>
+                <li><button onClick={() => onNavigate('library')} className="hover:text-[rgb(var(--primary-color))] transition-colors">Library</button></li>
               </ul>
             </div>
             <div>
               <h3 className="text-white font-bold mb-4">Legal</h3>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-purple-400 transition-colors">DMCA</a></li>
-                <li><a href="#" className="hover:text-purple-400 transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-purple-400 transition-colors">Terms of Service</a></li>
+                <li><button onClick={() => onNavigate('dmca')} className="hover:text-[rgb(var(--primary-color))] transition-colors">DMCA</button></li>
+                <li><button onClick={() => onNavigate('privacy')} className="hover:text-[rgb(var(--primary-color))] transition-colors">Privacy Policy</button></li>
+                <li><button onClick={() => onNavigate('terms')} className="hover:text-[rgb(var(--primary-color))] transition-colors">Terms of Service</button></li>
               </ul>
             </div>
           </div>
@@ -45,10 +49,10 @@ export const Footer: React.FC = () => {
           <div>
             <h3 className="text-white font-bold mb-4">Connect</h3>
             <div className="flex items-center gap-4">
-              <a href="#" className="bg-white/5 p-2 rounded-full hover:bg-white/10 hover:text-white text-gray-400 transition-colors">
+              <a href="https://github.com" target="_blank" rel="noreferrer" className="bg-white/5 p-2 rounded-full hover:bg-white/10 hover:text-white text-gray-400 transition-colors">
                 <Github className="w-5 h-5" />
               </a>
-              <a href="#" className="bg-white/5 p-2 rounded-full hover:bg-white/10 hover:text-white text-gray-400 transition-colors">
+              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="bg-white/5 p-2 rounded-full hover:bg-white/10 hover:text-white text-gray-400 transition-colors">
                 <Twitter className="w-5 h-5" />
               </a>
             </div>
