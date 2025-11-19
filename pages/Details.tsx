@@ -4,14 +4,14 @@ import { getDetails, getVideos } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
 import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
-import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap } from 'lucide-react';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
   onBack: () => void;
 }
 
-type ServerType = 'vidlink' | 'vidsrc' | 'vidsrc-pro' | 'webtor';
+type ServerType = 'vidlink' | 'vidsrc' | 'vidsrc-pro' | 'webtor' | 'direct';
 
 export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
@@ -25,6 +25,8 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [showPlayer, setShowPlayer] = useState(false);
   const [server, setServer] = useState<ServerType>('vidlink');
   const [currentMagnet, setCurrentMagnet] = useState<string>('');
+  const [directUrl, setDirectUrl] = useState<string>('');
+  const [videoError, setVideoError] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
 
@@ -146,7 +148,12 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   };
 
   const handleStreamPlay = (stream: Stream) => {
-    if (stream.infoHash) {
+    setVideoError(false);
+    if (stream.url) {
+        setDirectUrl(stream.url);
+        setServer('direct');
+        setShowPlayer(true);
+    } else if (stream.infoHash) {
         const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
         setCurrentMagnet(magnet);
         setServer('webtor');
@@ -294,30 +301,52 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                                             <option value="vidlink">VidLink (Fastest)</option>
                                             <option value="vidsrc-pro">VidSrc Pro</option>
                                             <option value="vidsrc">VidSrc Legacy</option>
+                                            <option value="direct">Direct Play</option>
                                             <option value="webtor">P2P Torrent (Slow)</option>
                                         </select>
                                     </div>
                                 </div>
                                 <button 
-                                    onClick={() => { setShowPlayer(false); setCurrentMagnet(''); }}
+                                    onClick={() => { setShowPlayer(false); setCurrentMagnet(''); setDirectUrl(''); }}
                                     className="bg-black/60 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md border border-white/10"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
                             
-                            {server !== 'webtor' ? (
-                                <iframe 
-                                    src={getEmbedUrl()} 
-                                    className="w-full h-full" 
-                                    frameBorder="0" 
-                                    allowFullScreen 
-                                    allow="autoplay; encrypted-media; picture-in-picture"
-                                    referrerPolicy="origin"
-                                ></iframe>
-                            ) : (
+                            {/* Logic for different players */}
+                            {server === 'direct' ? (
+                                <div className="w-full h-full bg-black flex items-center justify-center relative">
+                                     {!videoError ? (
+                                        <video 
+                                            controls 
+                                            autoPlay 
+                                            className="w-full h-full outline-none"
+                                            src={directUrl}
+                                            onError={() => setVideoError(true)}
+                                        >
+                                        </video>
+                                     ) : (
+                                        <div className="text-center p-6">
+                                            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                                            <p className="text-white font-bold mb-2">Playback Failed</p>
+                                            <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
+                                                The browser cannot play this file format natively (likely MKV). 
+                                                Please download it or use an external player like VLC.
+                                            </p>
+                                            <a 
+                                                href={directUrl} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-2 bg-white text-black px-6 py-2 rounded font-bold hover:bg-gray-200 transition-colors"
+                                            >
+                                                <Download className="w-4 h-4" /> Download / Open
+                                            </a>
+                                        </div>
+                                     )}
+                                </div>
+                            ) : server === 'webtor' ? (
                                 <div id="webtor-player" className="w-full h-full bg-black flex items-center justify-center relative">
-                                    {/* Overlay Warning for P2P */}
                                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
                                          <div className="bg-black/80 p-4 rounded text-center">
                                             <Zap className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
@@ -326,12 +355,26 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                                          </div>
                                     </div>
                                 </div>
+                            ) : (
+                                <iframe 
+                                    src={getEmbedUrl()} 
+                                    className="w-full h-full" 
+                                    frameBorder="0" 
+                                    allowFullScreen 
+                                    allow="autoplay; encrypted-media; picture-in-picture"
+                                    referrerPolicy="origin"
+                                ></iframe>
                             )}
                         </div>
                         {server === 'webtor' && (
                             <p className="text-xs text-center text-yellow-500/80 mt-3 font-mono">
                                 Note: P2P streaming relies on seeds. It may be slow or fail for older content. 
                                 Switch to "VidLink" for instant playback.
+                            </p>
+                        )}
+                        {server === 'direct' && !videoError && (
+                            <p className="text-xs text-center text-gray-500 mt-3 font-mono">
+                                Playing directly from source. If no sound or video, file type may be unsupported.
                             </p>
                         )}
                     </div>
