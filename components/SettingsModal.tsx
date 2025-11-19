@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertTriangle, Link as LinkIcon, CheckCircle, Palette } from 'lucide-react';
+import { X, Save, AlertTriangle, Link as LinkIcon, CheckCircle, Palette, Settings } from 'lucide-react';
 import { TORRENTIO_BASE_URL } from '../constants';
 import { setTheme, getTheme } from '../services/storage';
 
