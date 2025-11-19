@@ -1,13 +1,23 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Initialize GenAI Client
-// NOTE: In a real app, process.env.API_KEY is handled by the build system.
-// We assume it is available.
-const apiKey = process.env.API_KEY || ''; 
+// Safely access API key. In a browser via direct import, 'process' might not be defined.
+// We try to access it safely.
+let apiKey = '';
+try {
+  if (typeof process !== 'undefined' && process.env) {
+    apiKey = process.env.API_KEY || '';
+  }
+} catch (e) {
+  // Ignore error if process is not defined
+}
+
 const ai = new GoogleGenAI({ apiKey });
 
 export const getAiInsight = async (title: string, overview: string) => {
-  if (!apiKey) return "AI Config Missing: Please add API_KEY to environment.";
+  if (!apiKey) {
+    console.warn("Gemini API Key missing");
+    return "";
+  }
 
   try {
     const model = 'gemini-2.5-flash';
@@ -31,6 +41,6 @@ export const getAiInsight = async (title: string, overview: string) => {
     return response.text;
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "AI is currently sleeping. Try again later.";
+    return "";
   }
 };

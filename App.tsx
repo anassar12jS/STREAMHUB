@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Home } from './pages/Home';
 import { Details } from './pages/Details';
-import { searchMedia } from './services/tmdb';
-import { TMDBResult } from './types';
+import { searchMedia, getDetails } from './services/tmdb';
+import { TMDBResult, MediaType } from './types';
 import { MediaCard } from './components/MediaCard';
 
 // Define valid view types
@@ -14,6 +14,36 @@ const App: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<TMDBResult | null>(null);
   const [searchResults, setSearchResults] = useState<TMDBResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Initial Load: Check URL parameters for deep linking
+  useEffect(() => {
+    const init = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      const type = params.get('type') as MediaType;
+      const search = params.get('search');
+
+      if (id && type) {
+        try {
+          // Fetch basic details to reconstruct the item object
+          const details = await getDetails(parseInt(id), type);
+          setSelectedItem(details);
+          setView('details');
+          // We don't need to pushState here as we are already on the URL
+        } catch (e) {
+          console.error("Failed to load item from URL", e);
+          setView('home');
+        }
+      } else if (search) {
+        setSearchQuery(search);
+        const results = await searchMedia(search);
+        setSearchResults(results);
+        setView('search');
+      }
+    };
+
+    init();
+  }, []);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -27,17 +57,16 @@ const App: React.FC = () => {
            searchMedia(event.state.query).then(setSearchResults);
         }
       } else {
-        // Default to home if no state (initial load or back to start)
-        setView('home');
-        setSelectedItem(null);
+        // Fallback for when state is null (e.g. manually typing URL then going back)
+        const params = new URLSearchParams(window.location.search);
+        if (!params.get('id') && !params.get('search')) {
+            setView('home');
+            setSelectedItem(null);
+        }
       }
     };
 
     window.addEventListener('popstate', handlePopState);
-    
-    // Set initial state so we have something to pop back to
-    window.history.replaceState({ view: 'home' }, '', window.location.pathname);
-
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
@@ -54,24 +83,29 @@ const App: React.FC = () => {
   const handleSelect = (item: TMDBResult) => {
     setSelectedItem(item);
     setView('details');
-    window.history.pushState({ view: 'details', item }, '', `?id=${item.id}`);
+    window.history.pushState({ view: 'details', item }, '', `?id=${item.id}&type=${item.media_type}`);
     window.scrollTo(0, 0);
   };
 
   const handleNavigate = (target: string) => {
     if (target === 'home') {
       setView('home');
-      window.history.pushState({ view: 'home' }, '', '/');
+      window.history.pushState({ view: 'home' }, '', window.location.pathname); // Clear query params
       window.scrollTo(0, 0);
     }
   };
 
   const handleBack = () => {
-    window.history.back();
+    // If we have history, go back. If not (direct landing), go home.
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      handleNavigate('home');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white">
+    <div className="min-h-screen bg-[#0f0f0f] text-white font-sans">
       <Navbar onSearch={handleSearch} onNavigate={handleNavigate} />
       
       <main>
@@ -82,12 +116,19 @@ const App: React.FC = () => {
         )}
 
         {view === 'search' && (
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <h2 className="text-2xl font-bold mb-6">
-              Results for "{searchQuery}"
-            </h2>
+          <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
+             <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">
+                  Results for "<span className="text-purple-400">{searchQuery}</span>"
+                </h2>
+                <button onClick={() => handleNavigate('home')} className="text-sm text-gray-400 hover:text-white">Clear</button>
+             </div>
+            
             {searchResults.length === 0 ? (
-              <div className="text-center text-gray-500 mt-20">No results found.</div>
+              <div className="text-center text-gray-500 mt-20 flex flex-col items-center">
+                 <div className="text-4xl mb-2">😕</div>
+                 <p>No results found.</p>
+              </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                 {searchResults.map(item => (

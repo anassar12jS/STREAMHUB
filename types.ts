@@ -31,6 +31,7 @@ export interface TMDBVideo {
   site: string;
   type: string;
   name: string;
+  official: boolean;
 }
 
 export interface Stream {
