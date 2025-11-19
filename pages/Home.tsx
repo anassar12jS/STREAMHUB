@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { getTrending, getPopularMovies, getPopularTV, getTopRatedMovies, getTopRatedTV } from '../services/tmdb';
+import { getHistory } from '../services/storage';
 import { TMDBResult } from '../types';
 import { MediaCard } from '../components/MediaCard';
 import { TMDB_IMAGE_BASE } from '../constants';
-import { Play, Info, TrendingUp, Star, Film, Tv } from 'lucide-react';
+import { Play, Info, TrendingUp, Star, Film, Tv, Clock } from 'lucide-react';
 
 interface HomeProps {
   onSelect: (item: TMDBResult) => void;
@@ -15,9 +16,13 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
   const [series, setSeries] = useState<TMDBResult[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<TMDBResult[]>([]);
   const [topRatedSeries, setTopRatedSeries] = useState<TMDBResult[]>([]);
+  const [history, setHistory] = useState<TMDBResult[]>([]);
   const [heroItem, setHeroItem] = useState<TMDBResult | null>(null);
 
   useEffect(() => {
+    // Load History immediately
+    setHistory(getHistory());
+
     const loadData = async () => {
       try {
         const [t, m, s, tm, ts] = await Promise.all([
@@ -43,7 +48,7 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
   const Row = ({ title, items, icon: Icon }: { title: string, items: TMDBResult[], icon?: React.ElementType }) => (
     <div className="mb-12 relative z-10">
       <div className="flex items-center gap-3 mb-5 px-4">
-        {Icon && <Icon className="w-6 h-6 text-purple-500" />}
+        {Icon && <Icon className="w-6 h-6 text-[rgb(var(--primary-color))]" />}
         <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">{title}</h2>
       </div>
       
@@ -53,7 +58,6 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
              <MediaCard item={item} onClick={onSelect} />
           </div>
         ))}
-        {/* Spacer div to ensure the last item isn't cut off by padding right logic in some browsers */}
         <div className="w-2 shrink-0"></div>
       </div>
     </div>
@@ -61,7 +65,7 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
 
   return (
     <div className="min-h-screen pb-20 bg-[#0f0f0f] overflow-x-hidden">
-      {/* Hero Section (Full Width) */}
+      {/* Hero Section */}
       {heroItem && (
         <div className="relative h-[85vh] w-full mb-16 group">
           <div className="absolute inset-0">
@@ -112,9 +116,13 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
         </div>
       )}
 
-      {/* Rows Container - Centered with Max Width */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="space-y-2">
+          {/* History Row - Only show if has items */}
+          {history.length > 0 && (
+             <Row title="Continue Watching" items={history} icon={Clock} />
+          )}
+
           <Row title="Trending Today" items={trending} icon={TrendingUp} />
           <Row title="Popular Movies" items={movies} icon={Film} />
           <Row title="Hit TV Series" items={series} icon={Tv} />

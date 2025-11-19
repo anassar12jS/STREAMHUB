@@ -1,5 +1,5 @@
 import { TMDB_API_KEY, TMDB_BASE_URL } from '../constants';
-import { TMDBResult, TMDBDetail, TMDBVideo, MediaType } from '../types';
+import { TMDBResult, TMDBDetail, TMDBVideo, MediaType, PersonDetail } from '../types';
 
 const fetchTMDB = async (endpoint: string, params: Record<string, string> = {}) => {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
@@ -43,7 +43,7 @@ export const searchMedia = async (query: string): Promise<TMDBResult[]> => {
 };
 
 export const getDetails = async (id: number, type: MediaType): Promise<TMDBDetail> => {
-  const data = await fetchTMDB(`/${type}/${id}`, { append_to_response: 'external_ids' });
+  const data = await fetchTMDB(`/${type}/${id}`, { append_to_response: 'external_ids,credits' });
   return { ...data, media_type: type };
 };
 
@@ -64,4 +64,46 @@ export const getRecommendations = async (id: number, type: MediaType): Promise<T
   } catch (e) {
     return [];
   }
+};
+
+// Person & Cast
+export const getPerson = async (id: number): Promise<PersonDetail> => {
+  const data = await fetchTMDB(`/person/${id}`);
+  return data;
+};
+
+export const getPersonCredits = async (id: number): Promise<TMDBResult[]> => {
+  const data = await fetchTMDB(`/person/${id}/combined_credits`);
+  return data.cast
+    .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
+    .sort((a: any, b: any) => b.vote_count - a.vote_count); // Sort by most popular/votes
+};
+
+// Discover
+export const getGenres = async (type: MediaType) => {
+  const data = await fetchTMDB(`/genre/${type}/list`);
+  return data.genres;
+};
+
+export const discoverMedia = async (
+  type: MediaType, 
+  sortBy: string = 'popularity.desc', 
+  genreId?: number, 
+  year?: number
+): Promise<TMDBResult[]> => {
+  const params: Record<string, string> = {
+    sort_by: sortBy,
+    include_adult: 'false',
+    include_video: 'false',
+    page: '1',
+  };
+
+  if (genreId) params.with_genres = genreId.toString();
+  if (year) {
+    if (type === MediaType.MOVIE) params.primary_release_year = year.toString();
+    if (type === MediaType.TV) params.first_air_date_year = year.toString();
+  }
+
+  const data = await fetchTMDB(`/discover/${type}`, params);
+  return data.results.map((item: any) => ({ ...item, media_type: type }));
 };

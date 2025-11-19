@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertTriangle, Link as LinkIcon, CheckCircle } from 'lucide-react';
+import { X, Save, AlertTriangle, Link as LinkIcon, CheckCircle, Palette } from 'lucide-react';
 import { TORRENTIO_BASE_URL } from '../constants';
+import { setTheme, getTheme } from '../services/storage';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,33 +11,37 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [url, setUrl] = useState('');
   const [saved, setSaved] = useState(false);
+  const [activeTheme, setActiveTheme] = useState('purple');
 
   useEffect(() => {
     const stored = localStorage.getItem('torrentio_url');
     setUrl(stored || TORRENTIO_BASE_URL);
+    setActiveTheme(getTheme());
   }, [isOpen]);
 
   const handleSave = () => {
     let cleanUrl = url.trim();
-    // Basic validation
     if (!cleanUrl.startsWith('http')) {
         cleanUrl = 'https://' + cleanUrl;
     }
-    // Remove trailing slash/manifest.json if user pasted full link
     cleanUrl = cleanUrl.replace('/manifest.json', '').replace(/\/$/, '');
     
     localStorage.setItem('torrentio_url', cleanUrl);
+    setTheme(activeTheme);
+    
     setSaved(true);
     setTimeout(() => {
         setSaved(false);
         onClose();
-        window.location.reload(); // Reload to apply changes
+        window.location.reload(); // Reload to apply changes globally
     }, 800);
   };
 
   const handleReset = () => {
     localStorage.removeItem('torrentio_url');
     setUrl(TORRENTIO_BASE_URL);
+    setActiveTheme('purple');
+    setTheme('purple');
     setSaved(true);
     setTimeout(() => {
         setSaved(false);
@@ -44,6 +49,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         window.location.reload();
     }, 800);
   };
+
+  const themes = [
+      { id: 'purple', color: '#9333ea', label: 'Royal' },
+      { id: 'red', color: '#dc2626', label: 'Netflix' },
+      { id: 'blue', color: '#2563eb', label: 'Ocean' },
+      { id: 'green', color: '#16a34a', label: 'Spotify' },
+      { id: 'orange', color: '#ea580c', label: 'Sunset' },
+  ];
 
   if (!isOpen) return null;
 
@@ -56,52 +69,67 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           <X className="w-5 h-5" />
         </button>
 
-        <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-          <LinkIcon className="w-5 h-5 text-purple-500" />
-          Addon Configuration
+        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <Settings className="w-5 h-5 text-[rgb(var(--primary-color))]" />
+          Settings
         </h2>
-        <p className="text-gray-400 text-sm mb-6">
-          Configure the data source for streams. By default, this uses the public Torrentio instance.
-        </p>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Torrentio URL</label>
-            <input 
-              type="text" 
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full bg-black border border-gray-700 rounded px-3 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
-              placeholder="https://torrentio.strem.fun"
-            />
-          </div>
-
-          <div className="bg-blue-900/20 border border-blue-500/30 rounded p-4 flex gap-3">
-            <AlertTriangle className="w-5 h-5 text-blue-400 shrink-0" />
-            <div className="text-xs text-blue-200 leading-relaxed">
-              <span className="font-bold text-blue-400">Want faster speeds?</span>
-              <br />
-              Standard torrents rely on P2P seeders which can be slow in a browser.
-              <br />
-              <br />
-              For <b>instant 4K streaming</b>, go to <a href="https://torrentio.strem.fun/configure" target="_blank" rel="noreferrer" className="underline hover:text-white">torrentio.strem.fun</a>, configure it with a Debrid provider (like Real-Debrid), and paste the generated URL above.
+        <div className="space-y-8">
+            {/* Theme Section */}
+            <div>
+                <h3 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                    <Palette className="w-4 h-4" /> Accent Color
+                </h3>
+                <div className="flex gap-3">
+                    {themes.map(t => (
+                        <button
+                            key={t.id}
+                            onClick={() => setActiveTheme(t.id)}
+                            className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${activeTheme === t.id ? 'border-white scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                            style={{ backgroundColor: t.color }}
+                            title={t.label}
+                        >
+                            {activeTheme === t.id && <CheckCircle className="w-5 h-5 text-white mix-blend-difference" />}
+                        </button>
+                    ))}
+                </div>
             </div>
-          </div>
+
+            {/* Addon Section */}
+            <div>
+                <h3 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                    <LinkIcon className="w-4 h-4" /> Stream Source
+                </h3>
+                <input 
+                type="text" 
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="w-full bg-black border border-gray-700 rounded px-3 py-3 text-sm text-white focus:outline-none focus:border-[rgb(var(--primary-color))] transition-colors font-mono mb-3"
+                placeholder="https://torrentio.strem.fun"
+                />
+                
+                <div className="bg-blue-900/20 border border-blue-500/30 rounded p-4 flex gap-3">
+                    <AlertTriangle className="w-5 h-5 text-blue-400 shrink-0" />
+                    <div className="text-xs text-blue-200 leading-relaxed">
+                    For <b>instant 4K streaming</b>, configure <a href="https://torrentio.strem.fun/configure" target="_blank" rel="noreferrer" className="underline hover:text-white">Torrentio with Real-Debrid</a> and paste the URL here.
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div className="mt-8 flex items-center justify-between gap-4">
+        <div className="mt-8 flex items-center justify-between gap-4 pt-4 border-t border-gray-800">
            <button 
              onClick={handleReset}
              className="text-xs text-gray-500 hover:text-gray-300 underline"
             >
-                Reset to Default
+                Reset All
             </button>
             <button 
                 onClick={handleSave}
                 className="bg-white text-black hover:bg-gray-200 px-6 py-2.5 rounded font-bold flex items-center gap-2 transition-colors"
             >
                 {saved ? <CheckCircle className="w-4 h-4 text-green-600" /> : <Save className="w-4 h-4" />}
-                {saved ? 'Saved!' : 'Save Configuration'}
+                {saved ? 'Saved!' : 'Save Changes'}
             </button>
         </div>
       </div>

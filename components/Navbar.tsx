@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Film, Menu, X, Settings, Bookmark, Trophy } from 'lucide-react';
+import { Search, Film, Menu, X, Settings, Bookmark, Trophy, Compass } from 'lucide-react';
 
 interface NavbarProps {
   onSearch: (query: string) => void;
@@ -24,7 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate, onOpenSett
           
           {/* Logo */}
           <div className="flex items-center cursor-pointer" onClick={() => onNavigate('home')}>
-            <div className="h-8 w-8 bg-gradient-to-br from-purple-600 to-blue-500 rounded-lg flex items-center justify-center mr-2">
+            <div className="h-8 w-8 bg-gradient-to-br from-[rgb(var(--primary-color))] to-blue-600 rounded-lg flex items-center justify-center mr-2">
               <Film className="h-5 w-5 text-white" />
             </div>
             <span className="font-bold text-xl tracking-tight">StreamHub</span>
@@ -34,6 +34,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate, onOpenSett
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
               <button onClick={() => onNavigate('home')} className="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors">Home</button>
+              <button onClick={() => onNavigate('discover')} className="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2">
+                <Compass className="w-4 h-4" /> Discover
+              </button>
               <button onClick={() => onNavigate('library')} className="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2">
                 <Bookmark className="w-4 h-4" /> Library
               </button>
@@ -48,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate, onOpenSett
             <form onSubmit={handleSubmit} className="relative">
               <input
                 type="text"
-                className="w-full bg-gray-800 text-sm rounded-full pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-200 placeholder-gray-500"
+                className="w-full bg-gray-800 text-sm rounded-full pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-color))] text-gray-200 placeholder-gray-500"
                 placeholder="Search movies, shows..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -86,7 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate, onOpenSett
            <form onSubmit={handleSubmit} className="mt-4 relative">
               <input
                 type="text"
-                className="w-full bg-gray-800 rounded-md pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full bg-gray-800 rounded-md pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-color))]"
                 placeholder="Search..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -95,6 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate, onOpenSett
             </form>
             <div className="mt-4 space-y-2">
               <button onClick={() => { onNavigate('home'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-800">Home</button>
+              <button onClick={() => { onNavigate('discover'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-800">Discover</button>
               <button onClick={() => { onNavigate('library'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-800">My Library</button>
               <button onClick={() => { onNavigate('sports'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-800 text-yellow-500">Live Sports</button>
             </div>

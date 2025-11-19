@@ -1,7 +1,8 @@
 
 export enum MediaType {
   MOVIE = 'movie',
-  TV = 'tv'
+  TV = 'tv',
+  PERSON = 'person'
 }
 
 export interface TMDBResult {
@@ -17,6 +18,23 @@ export interface TMDBResult {
   first_air_date?: string; // For TV
 }
 
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
+export interface PersonDetail {
+  id: number;
+  name: string;
+  biography: string;
+  birthday: string | null;
+  deathday: string | null;
+  place_of_birth: string | null;
+  profile_path: string | null;
+}
+
 export interface TMDBDetail extends TMDBResult {
   genres: { id: number; name: string }[];
   external_ids?: {
@@ -24,6 +42,9 @@ export interface TMDBDetail extends TMDBResult {
   };
   runtime?: number;
   number_of_seasons?: number;
+  credits?: {
+    cast: CastMember[];
+  };
 }
 
 export interface TMDBVideo {

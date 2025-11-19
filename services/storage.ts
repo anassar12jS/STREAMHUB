@@ -1,7 +1,10 @@
 import { TMDBResult } from '../types';
 
 const WATCHLIST_KEY = 'streamhub_watchlist';
+const HISTORY_KEY = 'streamhub_history';
+const THEME_KEY = 'streamhub_theme';
 
+// Watchlist
 export const getWatchlist = (): TMDBResult[] => {
   try {
     const stored = localStorage.getItem(WATCHLIST_KEY);
@@ -28,4 +31,31 @@ export const removeFromWatchlist = (id: number) => {
 export const isInWatchlist = (id: number): boolean => {
   const list = getWatchlist();
   return !!list.find(i => i.id === id);
+};
+
+// History (Recently Watched)
+export const getHistory = (): TMDBResult[] => {
+  try {
+    const stored = localStorage.getItem(HISTORY_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const addToHistory = (item: TMDBResult) => {
+  const list = getHistory();
+  // Remove if already exists to move to top
+  const filtered = list.filter(i => i.id !== item.id);
+  const updated = [item, ...filtered].slice(0, 20); // Keep max 20 items
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+};
+
+// Theme
+export const getTheme = (): string => {
+  return localStorage.getItem(THEME_KEY) || 'purple';
+};
+
+export const setTheme = (color: string) => {
+  localStorage.setItem(THEME_KEY, color);
 };

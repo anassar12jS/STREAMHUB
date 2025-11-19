@@ -2,20 +2,21 @@ import React, { useEffect, useState, useRef } from 'react';
 import { TMDBResult, TMDBDetail, MediaType, Stream, TMDBVideo } from '../types';
 import { getDetails, getVideos, getRecommendations } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
-import { isInWatchlist, addToWatchlist, removeFromWatchlist } from '../services/storage';
+import { isInWatchlist, addToWatchlist, removeFromWatchlist, addToHistory } from '../services/storage';
 import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
 import { MediaCard } from '../components/MediaCard';
-import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check, Sparkles } from 'lucide-react';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
   onBack: () => void;
+  onPersonClick?: (id: number) => void;
 }
 
 type ServerType = 'cinemaos' | 'vidlink' | 'vidsrc-pro' | 'vidsrc' | 'direct' | 'webtor';
 
-export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
+export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
   const [trailer, setTrailer] = useState<TMDBVideo | null>(null);
   const [recommendations, setRecommendations] = useState<TMDBResult[]>([]);
@@ -41,6 +42,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
         const d = await getDetails(item.id, item.media_type);
         setDetail(d);
         setInLibrary(isInWatchlist(item.id));
+        addToHistory(item); // Add to History automatically
         
         // Fetch Videos
         const videos = await getVideos(item.id, item.media_type);
@@ -79,13 +81,12 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     }
   }, [selectedSeason, selectedEpisode, detail]);
 
-  // Load Webtor SDK dynamically
+  // Load Webtor SDK
   useEffect(() => {
     if (document.getElementById('webtor-sdk')) {
       setSdkLoaded(true);
       return;
     }
-    
     const script = document.createElement('script');
     script.id = 'webtor-sdk';
     script.src = 'https://cdn.jsdelivr.net/npm/@webtor/embed-sdk-js/dist/index.min.js';
@@ -94,7 +95,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     document.body.appendChild(script);
   }, []);
 
-  // Initialize Webtor Player
+  // Init Webtor
   useEffect(() => {
     if (showPlayer && server === 'webtor' && currentMagnet && detail && sdkLoaded && window.webtor) {
         const container = document.getElementById('webtor-player');
@@ -118,7 +119,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     }
   }, [showPlayer, server, currentMagnet, detail, selectedSeason, selectedEpisode, sdkLoaded]);
 
-  // Scroll to player
   useEffect(() => {
     if (showPlayer && playerRef.current) {
       playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -135,19 +135,8 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     }
   };
 
-  // Handle Recommendation Click (Re-uses Detail View)
   const handleRecClick = (rec: TMDBResult) => {
-     // In a real app this might push history, here we just reload the component by calling parent
-     // But since we are inside the component, we need to trigger the parent's onSelect ideally.
-     // However, since we don't have direct access to setView/setSelectedItem from props easily without threading,
-     // We will just force a reload via window location for simplicity in this context OR better, 
-     // we reuse the onBack logic to go home? No, we want to see details.
-     // The best way in this current architecture is to update the URL and let App.tsx detect it, 
-     // or if we were using a router.
-     // Since App.tsx listens to popstate/URL changes, we can push state.
      window.history.pushState({ view: 'details', item: rec }, '', `?id=${rec.id}&type=${rec.media_type}`);
-     // We need to dispatch a popstate event manually or just reload the page content
-     // A quick hack for this specific no-router setup:
      window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'details', item: rec } }));
      window.scrollTo(0,0);
   };
@@ -202,8 +191,14 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   };
 
   const handleDirectPlay = () => {
-      setServer('cinemaos'); // Default to CinemaOS
+      setServer('cinemaos');
       setShowPlayer(true);
+  };
+
+  const openSubtitles = () => {
+      if (detail.external_ids?.imdb_id) {
+          window.open(`https://www.opensubtitles.org/en/search/imdbid-${detail.external_ids.imdb_id.replace('tt', '')}`, '_blank');
+      }
   };
 
   const backdropUrl = detail.backdrop_path ? `${TMDB_IMAGE_BASE}${detail.backdrop_path}` : '';
@@ -211,78 +206,45 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-gray-100 pb-10 font-sans">
-      {/* Fixed Background */}
       <div className="fixed inset-0 z-0">
         {backdropUrl && (
             <>
-                <img 
-                src={backdropUrl} 
-                alt="bg" 
-                className="w-full h-full object-cover opacity-20 blur-lg scale-105"
-                />
+                <img src={backdropUrl} alt="bg" className="w-full h-full object-cover opacity-20 blur-lg scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f0f]/80 via-[#0f0f0f]/95 to-[#0f0f0f]" />
             </>
         )}
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Navigation */}
         <div className="mb-6">
-            <button 
-            onClick={onBack}
-            className="flex items-center text-gray-400 hover:text-white transition-colors"
-            >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            <span className="font-medium">Back</span>
+            <button onClick={onBack} className="flex items-center text-gray-400 hover:text-white transition-colors">
+            <ArrowLeft className="w-5 h-5 mr-2" /> <span className="font-medium">Back</span>
             </button>
         </div>
 
-        {/* Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8 lg:gap-12 mb-20">
-            
-            {/* Poster Column (Sticky on Desktop) */}
             <div className="hidden lg:block">
                 <div className="sticky top-24 space-y-4">
                     <div className="rounded-lg overflow-hidden shadow-2xl shadow-black/80 border border-white/10 aspect-[2/3]">
                         <img src={posterUrl} alt={detail.title} className="w-full h-full object-cover" />
                     </div>
-                    
-                    <button 
-                        onClick={handleDirectPlay}
-                        className="flex items-center justify-center w-full gap-2 bg-white text-black font-bold py-3 rounded hover:bg-gray-200 transition-colors group"
-                    >
-                        <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" /> 
-                        <span>Play Now</span>
+                    <button onClick={handleDirectPlay} className="flex items-center justify-center w-full gap-2 bg-white text-black font-bold py-3 rounded hover:bg-gray-200 transition-colors group">
+                        <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" /> <span>Play Now</span>
                     </button>
-
                     <div className="grid grid-cols-2 gap-3">
-                        <button 
-                            onClick={toggleLibrary}
-                            className={`flex items-center justify-center gap-2 border font-medium py-3 rounded transition-colors ${inLibrary ? 'bg-purple-600/20 border-purple-500 text-purple-400' : 'bg-[#222] border-white/10 text-white hover:bg-[#333]'}`}
-                        >
-                            {inLibrary ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />} 
-                            <span>{inLibrary ? 'Saved' : 'My List'}</span>
+                        <button onClick={toggleLibrary} className={`flex items-center justify-center gap-2 border font-medium py-3 rounded transition-colors ${inLibrary ? 'bg-[rgb(var(--primary-color))]/20 border-[rgb(var(--primary-color))] text-[rgb(var(--primary-color))]' : 'bg-[#222] border-white/10 text-white hover:bg-[#333]'}`}>
+                            {inLibrary ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />} <span>{inLibrary ? 'Saved' : 'My List'}</span>
                         </button>
-
                         {trailer && (
-                            <a 
-                                href={`https://www.youtube.com/watch?v=${trailer.key}`} 
-                                target="_blank" 
-                                rel="noreferrer"
-                                className="flex items-center justify-center gap-2 bg-[#222] text-white border border-white/10 font-medium py-3 rounded hover:bg-[#333] transition-colors"
-                            >
-                                <Youtube className="w-5 h-5 text-red-600" /> 
-                                <span>Trailer</span>
+                            <a href={`https://www.youtube.com/watch?v=${trailer.key}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 bg-[#222] text-white border border-white/10 font-medium py-3 rounded hover:bg-[#333] transition-colors">
+                                <Youtube className="w-5 h-5 text-red-600" /> <span>Trailer</span>
                             </a>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* Content Column */}
             <div className="flex flex-col min-w-0">
-                
-                {/* Mobile Header */}
                 <div className="lg:hidden flex gap-4 mb-6">
                     <div className="w-28 shrink-0 rounded overflow-hidden shadow-lg border border-white/10 aspect-[2/3]">
                         <img src={posterUrl} className="w-full h-full object-cover" />
@@ -296,64 +258,63 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                             <span>{detail.release_date?.split('-')[0] || 'N/A'}</span>
                          </div>
                          <div className="flex gap-2 mt-2">
-                            <button 
-                                onClick={handleDirectPlay}
-                                className="bg-white text-black text-xs font-bold py-2 px-4 rounded flex items-center gap-2"
-                            >
-                                <PlayCircle className="w-4 h-4" /> Play
-                            </button>
-                            <button 
-                                onClick={toggleLibrary}
-                                className={`text-xs font-bold py-2 px-3 rounded flex items-center gap-2 border ${inLibrary ? 'bg-purple-600/20 border-purple-500 text-purple-400' : 'border-white/20 text-white'}`}
-                            >
-                                {inLibrary ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                            </button>
+                            <button onClick={handleDirectPlay} className="bg-white text-black text-xs font-bold py-2 px-4 rounded flex items-center gap-2"><PlayCircle className="w-4 h-4" /> Play</button>
+                            <button onClick={toggleLibrary} className={`text-xs font-bold py-2 px-3 rounded flex items-center gap-2 border ${inLibrary ? 'bg-[rgb(var(--primary-color))]/20 border-[rgb(var(--primary-color))] text-[rgb(var(--primary-color))]' : 'border-white/20 text-white'}`}>{inLibrary ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}</button>
                          </div>
                     </div>
                 </div>
 
-                {/* Desktop Title & Metadata */}
                 <div className="hidden lg:block mb-6">
-                    <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">
-                        {detail.title || detail.name}
-                    </h1>
+                    <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">{detail.title || detail.name}</h1>
                     <div className="flex items-center gap-4 text-gray-400 text-sm">
-                        <span className="flex items-center gap-1 text-white">
-                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" /> {detail.vote_average.toFixed(1)}
-                        </span>
+                        <span className="flex items-center gap-1 text-white"><Star className="w-4 h-4 text-yellow-500 fill-yellow-500" /> {detail.vote_average.toFixed(1)}</span>
                         <span>{detail.release_date || detail.first_air_date}</span>
                         {detail.runtime && <span>{detail.runtime} min</span>}
                         <div className="flex gap-2">
-                            {detail.genres.map(g => (
-                                <span key={g.id} className="border border-gray-700 px-2 py-0.5 rounded text-xs">
-                                    {g.name}
-                                </span>
-                            ))}
+                            {detail.genres.map(g => <span key={g.id} className="border border-gray-700 px-2 py-0.5 rounded text-xs">{g.name}</span>)}
                         </div>
                     </div>
                 </div>
 
-                {/* Overview */}
-                <div className="mb-10">
+                <div className="mb-8">
                     <h3 className="text-white font-bold text-lg mb-2">Overview</h3>
-                    <p className="text-gray-400 leading-relaxed">
-                        {detail.overview}
-                    </p>
+                    <p className="text-gray-400 leading-relaxed">{detail.overview}</p>
                 </div>
 
-                {/* Player */}
+                {/* Cast Section */}
+                {detail.credits && detail.credits.cast.length > 0 && (
+                    <div className="mb-10">
+                        <h3 className="text-white font-bold text-lg mb-4">Cast</h3>
+                        <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                            {detail.credits.cast.slice(0, 10).map(actor => (
+                                <div 
+                                    key={actor.id} 
+                                    className="w-24 shrink-0 text-center cursor-pointer group"
+                                    onClick={() => onPersonClick && onPersonClick(actor.id)}
+                                >
+                                    <div className="w-20 h-20 mx-auto rounded-full overflow-hidden mb-2 border-2 border-transparent group-hover:border-[rgb(var(--primary-color))] transition-colors">
+                                        <img 
+                                            src={actor.profile_path ? `${TMDB_POSTER_BASE}${actor.profile_path}` : 'https://via.placeholder.com/100x100?text=?'} 
+                                            className="w-full h-full object-cover"
+                                            alt={actor.name}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-white font-medium truncate">{actor.name}</p>
+                                    <p className="text-[10px] text-gray-500 truncate">{actor.character}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {showPlayer && (
                     <div ref={playerRef} className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800 relative group">
                             <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10">
-                                        <Server className="w-4 h-4 text-purple-400 ml-2" />
-                                        <select 
-                                            value={server}
-                                            onChange={(e) => setServer(e.target.value as ServerType)}
-                                            className="bg-transparent text-white text-xs font-bold py-1 pr-2 focus:outline-none cursor-pointer"
-                                        >
+                                        <Server className="w-4 h-4 text-[rgb(var(--primary-color))] ml-2" />
+                                        <select value={server} onChange={(e) => setServer(e.target.value as ServerType)} className="bg-transparent text-white text-xs font-bold py-1 pr-2 focus:outline-none cursor-pointer">
                                             <option value="cinemaos" className="bg-black text-gray-200">CinemaOS (Best)</option>
                                             <option value="vidlink" className="bg-black text-gray-200">VidLink</option>
                                             <option value="vidsrc-pro" className="bg-black text-gray-200">VidSrc Pro</option>
@@ -362,172 +323,77 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                                             <option value="webtor" className="bg-black text-gray-200">P2P Torrent</option>
                                         </select>
                                     </div>
+                                    <button onClick={openSubtitles} className="flex items-center gap-1 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/10">
+                                        <Captions className="w-4 h-4" /> Subs
+                                    </button>
                                 </div>
-                                <button 
-                                    onClick={() => { setShowPlayer(false); setCurrentMagnet(''); setDirectUrl(''); }}
-                                    className="bg-black/60 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md border border-white/10"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
+                                <button onClick={() => { setShowPlayer(false); setCurrentMagnet(''); setDirectUrl(''); }} className="bg-black/60 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md border border-white/10"><X className="w-4 h-4" /></button>
                             </div>
                             
                             {server === 'direct' ? (
                                 <div className="w-full h-full bg-black flex items-center justify-center relative">
                                      {!videoError ? (
-                                        <video 
-                                            controls 
-                                            autoPlay 
-                                            className="w-full h-full outline-none"
-                                            src={directUrl}
-                                            onError={() => setVideoError(true)}
-                                        >
-                                        </video>
+                                        <video controls autoPlay className="w-full h-full outline-none" src={directUrl} onError={() => setVideoError(true)}></video>
                                      ) : (
                                         <div className="text-center p-6">
                                             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
                                             <p className="text-white font-bold mb-2">Playback Failed</p>
-                                            <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
-                                                The browser cannot play this file format natively. 
-                                                Please download it or use an external player like VLC.
-                                            </p>
-                                            <a 
-                                                href={directUrl} 
-                                                target="_blank" 
-                                                rel="noreferrer"
-                                                className="inline-flex items-center gap-2 bg-white text-black px-6 py-2 rounded font-bold hover:bg-gray-200 transition-colors"
-                                            >
-                                                <Download className="w-4 h-4" /> Download
-                                            </a>
+                                            <a href={directUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-white text-black px-6 py-2 rounded font-bold hover:bg-gray-200 transition-colors"><Download className="w-4 h-4" /> Download</a>
                                         </div>
                                      )}
                                 </div>
                             ) : server === 'webtor' ? (
                                 <div id="webtor-player" className="w-full h-full bg-black flex items-center justify-center relative">
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                                         <div className="bg-black/80 p-4 rounded text-center">
-                                            <Zap className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-                                            <p className="text-sm font-bold text-white">P2P Stream Active</p>
-                                            <p className="text-xs text-gray-400">Waiting for peers...</p>
-                                         </div>
-                                    </div>
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><div className="bg-black/80 p-4 rounded text-center"><Zap className="w-8 h-8 text-yellow-500 mx-auto mb-2" /><p className="text-sm font-bold text-white">P2P Stream Active</p></div></div>
                                 </div>
                             ) : (
-                                <iframe 
-                                    src={getEmbedUrl()} 
-                                    className="w-full h-full" 
-                                    frameBorder="0" 
-                                    allowFullScreen 
-                                    allow="autoplay; encrypted-media; picture-in-picture"
-                                    referrerPolicy="origin"
-                                ></iframe>
+                                <iframe src={getEmbedUrl()} className="w-full h-full" frameBorder="0" allowFullScreen allow="autoplay; encrypted-media; picture-in-picture" referrerPolicy="origin"></iframe>
                             )}
                         </div>
-                        {server === 'webtor' && (
-                            <p className="text-xs text-center text-yellow-500/80 mt-3 font-mono">
-                                Note: P2P streaming relies on seeds. Use "CinemaOS" for instant playback.
-                            </p>
-                        )}
-                        {server === 'direct' && !videoError && (
-                             <div className="mt-3 flex items-start justify-center gap-2 text-xs text-gray-400 bg-white/5 p-3 rounded border border-white/5">
-                                <Info className="w-4 h-4 shrink-0 text-blue-400" />
-                                <p>
-                                    <span className="text-gray-200 font-bold">Green Screen?</span> The file is downloading to the server. 
-                                    Try a <span className="text-blue-400 font-bold">⚡ CACHED</span> stream.
-                                </p>
-                             </div>
-                        )}
+                        {server === 'direct' && !videoError && <div className="mt-3 flex items-start justify-center gap-2 text-xs text-gray-400 bg-white/5 p-3 rounded border border-white/5"><Info className="w-4 h-4 shrink-0 text-blue-400" /><p><span className="text-gray-200 font-bold">Green Screen?</span> The file is downloading to the server. Try a <span className="text-blue-400 font-bold">⚡ CACHED</span> stream.</p></div>}
                     </div>
                 )}
 
-                {/* TV Controls */}
                 {item.media_type === MediaType.TV && (
                     <div className="mb-8 bg-[#161616] rounded-lg border border-white/5 p-4 sm:p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Tv className="w-5 h-5 text-gray-400" />
-                            <h3 className="font-bold text-white">Episodes</h3>
-                        </div>
+                        <div className="flex items-center gap-2 mb-4"><Tv className="w-5 h-5 text-gray-400" /><h3 className="font-bold text-white">Episodes</h3></div>
                         <div className="flex flex-wrap gap-6">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Season</label>
-                                <select 
-                                    value={selectedSeason}
-                                    onChange={(e) => setSelectedSeason(parseInt(e.target.value))}
-                                    className="block bg-[#0a0a0a] border border-gray-700 text-white rounded px-4 py-2.5 outline-none focus:border-white transition-colors min-w-[120px]"
-                                >
-                                    {[...Array(detail.number_of_seasons || 1)].map((_, i) => (
-                                        <option key={i} value={i + 1}>Season {i + 1}</option>
-                                    ))}
+                                <select value={selectedSeason} onChange={(e) => setSelectedSeason(parseInt(e.target.value))} className="block bg-[#0a0a0a] border border-gray-700 text-white rounded px-4 py-2.5 outline-none focus:border-white transition-colors min-w-[120px]">
+                                    {[...Array(detail.number_of_seasons || 1)].map((_, i) => <option key={i} value={i + 1}>Season {i + 1}</option>)}
                                 </select>
                             </div>
-                            
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Episode</label>
                                 <div className="flex items-center gap-2">
-                                     <button 
-                                        onClick={() => setSelectedEpisode(Math.max(1, selectedEpisode - 1))}
-                                        className="p-2.5 rounded bg-[#0a0a0a] border border-gray-700 hover:bg-gray-700 text-white disabled:opacity-50"
-                                        disabled={selectedEpisode <= 1}
-                                     >
-                                        <ArrowLeft className="w-5 h-5" />
-                                     </button>
-                                     
-                                     <div className="bg-[#0a0a0a] border border-gray-700 text-white font-bold rounded px-6 py-2.5 min-w-[60px] text-center">
-                                        {selectedEpisode}
-                                     </div>
-
-                                     <button 
-                                        onClick={() => setSelectedEpisode(selectedEpisode + 1)}
-                                        className="p-2.5 rounded bg-[#0a0a0a] border border-gray-700 hover:bg-gray-700 text-white"
-                                     >
-                                        <ArrowLeft className="w-5 h-5 rotate-180" />
-                                     </button>
+                                     <button onClick={() => setSelectedEpisode(Math.max(1, selectedEpisode - 1))} className="p-2.5 rounded bg-[#0a0a0a] border border-gray-700 hover:bg-gray-700 text-white disabled:opacity-50" disabled={selectedEpisode <= 1}><ArrowLeft className="w-5 h-5" /></button>
+                                     <div className="bg-[#0a0a0a] border border-gray-700 text-white font-bold rounded px-6 py-2.5 min-w-[60px] text-center">{selectedEpisode}</div>
+                                     <button onClick={() => setSelectedEpisode(selectedEpisode + 1)} className="p-2.5 rounded bg-[#0a0a0a] border border-gray-700 hover:bg-gray-700 text-white"><ArrowLeft className="w-5 h-5 rotate-180" /></button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Streams List */}
                 <div>
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                            <Film className="w-5 h-5 text-gray-400" />
-                            Torrent Streams
-                        </h2>
-                        {loadingStreams && (
-                            <span className="text-xs text-gray-500 animate-pulse uppercase font-bold tracking-wider">Searching...</span>
-                        )}
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Film className="w-5 h-5 text-gray-400" /> Torrent Streams</h2>
+                        {loadingStreams && <span className="text-xs text-gray-500 animate-pulse uppercase font-bold tracking-wider">Searching...</span>}
                     </div>
-                    
                     <div className="bg-[#161616] rounded-lg border border-white/5 overflow-hidden">
                          {!loadingStreams && streams.length > 0 && (
-                            <div className="bg-[#0a0a0a] px-4 py-2 border-b border-white/5 flex items-center gap-4 text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-                                <span>Source</span>
-                                <span className="flex-1">Filename</span>
-                                <span>Size</span>
-                            </div>
+                            <div className="bg-[#0a0a0a] px-4 py-2 border-b border-white/5 flex items-center gap-4 text-[10px] text-gray-500 uppercase font-bold tracking-wider"><span>Source</span><span className="flex-1">Filename</span><span>Size</span></div>
                          )}
-                         <div className="p-2">
-                             <StreamList streams={streams} loading={loadingStreams} onPlay={handleStreamPlay} />
-                         </div>
+                         <div className="p-2"><StreamList streams={streams} loading={loadingStreams} onPlay={handleStreamPlay} /></div>
                     </div>
                 </div>
-
             </div>
         </div>
-
-        {/* Recommendations Section */}
         {recommendations.length > 0 && (
            <div className="mt-12 border-t border-white/10 pt-10">
-               <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                   <Sparkles className="w-5 h-5 text-purple-400" />
-                   You Might Also Like
-               </h2>
-               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                   {recommendations.map(rec => (
-                       <MediaCard key={rec.id} item={rec} onClick={handleRecClick} />
-                   ))}
-               </div>
+               <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Sparkles className="w-5 h-5 text-[rgb(var(--primary-color))]" /> You Might Also Like</h2>
+               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">{recommendations.map(rec => <MediaCard key={rec.id} item={rec} onClick={handleRecClick} />)}</div>
            </div>
         )}
       </div>
