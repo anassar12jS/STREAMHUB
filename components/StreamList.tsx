@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Stream } from '../types';
-import { Magnet, Play, HardDrive, Copy, ExternalLink, Check } from 'lucide-react';
+import { Magnet, Play, HardDrive, Copy, ExternalLink, Check, PlayCircle } from 'lucide-react';
 
 interface StreamListProps {
   streams: Stream[];
   loading: boolean;
+  onPlay: (stream: Stream) => void;
 }
 
-export const StreamList: React.FC<StreamListProps> = ({ streams, loading }) => {
+export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   if (loading) {
@@ -76,7 +77,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading }) => {
             key={idx}
             className="w-full flex items-center justify-between bg-gray-800/40 p-3 rounded-lg border border-gray-700/50 hover:border-gray-600 transition-colors group"
           >
-            <div className="flex items-center gap-4 overflow-hidden">
+            <div className="flex items-center gap-4 overflow-hidden flex-1">
               <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${isDirect ? 'bg-blue-900/50 text-blue-400' : 'bg-emerald-900/50 text-emerald-400'}`}>
                 {isDirect ? <Play className="w-5 h-5 ml-0.5" /> : <Magnet className="w-5 h-5" />}
               </div>
@@ -94,6 +95,17 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading }) => {
             </div>
             
             <div className="flex items-center gap-2 pl-2 shrink-0">
+                {!isDirect && (
+                  <button
+                    onClick={() => onPlay(stream)}
+                    className="flex items-center gap-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-500 hover:text-white px-3 py-1.5 rounded-md transition-all border border-emerald-600/50 mr-2"
+                    title="Stream in Browser"
+                  >
+                    <PlayCircle className="w-4 h-4" />
+                    <span className="text-xs font-bold hidden md:inline">Stream</span>
+                  </button>
+                )}
+
                 <button 
                     onClick={() => handleCopy(stream, idx)}
                     className="p-2 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-colors"
@@ -104,7 +116,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading }) => {
                 <button 
                     onClick={() => handleOpen(stream)}
                     className="p-2 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-colors"
-                    title={isDirect ? "Open URL" : "Open in App"}
+                    title={isDirect ? "Open URL" : "Open in External App"}
                 >
                     <ExternalLink className="w-4 h-4" />
                 </button>

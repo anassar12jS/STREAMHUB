@@ -1,3 +1,4 @@
+
 export enum MediaType {
   MOVIE = 'movie',
   TV = 'tv'
@@ -47,4 +48,17 @@ export interface Stream {
 
 export interface StreamResponse {
   streams: Stream[];
+}
+
+export interface WebtorOptions {
+  id: string;
+  magnet: string;
+  width?: string;
+  height?: string;
+  theme?: 'light' | 'dark';
+  poster?: string;
+  title?: string;
+  imdbId?: string;
+  version?: string;
+  mode?: string;
 }

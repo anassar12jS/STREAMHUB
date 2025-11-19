@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { TMDBResult, TMDBDetail, MediaType, Stream, TMDBVideo } from '../types';
 import { getDetails, getVideos } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
 import { TMDB_IMAGE_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
 import { ArrowLeft, Star, Calendar, Clock, Layers, Youtube, PlayCircle, Tv, Film, X } from 'lucide-react';
+// @ts-ignore
+import webtor from '@webtor/embed-sdk-js';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -19,6 +21,8 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [showPlayer, setShowPlayer] = useState(false);
+  const [playerMode, setPlayerMode] = useState<'embed' | 'webtor'>('embed');
+  const [currentMagnet, setCurrentMagnet] = useState<string>('');
 
   // Fetch Details
   useEffect(() => {
@@ -60,6 +64,28 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     }
   }, [selectedSeason, selectedEpisode, detail]);
 
+  // Initialize Webtor Player when conditions are met
+  useEffect(() => {
+    if (showPlayer && playerMode === 'webtor' && currentMagnet && detail) {
+        // Small timeout to ensure DOM is ready
+        const timer = setTimeout(() => {
+            webtor.push({
+                id: 'webtor-player',
+                magnet: currentMagnet,
+                width: '100%',
+                height: '100%',
+                imdbId: detail.external_ids?.imdb_id,
+                poster: detail.backdrop_path ? `${TMDB_IMAGE_BASE}${detail.backdrop_path}` : undefined,
+                title: item.media_type === MediaType.TV 
+                    ? `${detail.title || detail.name} - S${selectedSeason}E${selectedEpisode}` 
+                    : (detail.title || detail.name),
+                theme: 'dark'
+            });
+        }, 100);
+        return () => clearTimeout(timer);
+    }
+  }, [showPlayer, playerMode, currentMagnet, detail, selectedSeason, selectedEpisode]);
+
   if (!detail) {
     return (
       <div className="flex h-screen items-center justify-center flex-col gap-4">
@@ -75,6 +101,23 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     } else {
       return `https://vidsrc.xyz/embed/tv/${item.id}/${selectedSeason}/${selectedEpisode}`;
     }
+  };
+
+  const handleStreamPlay = (stream: Stream) => {
+    if (stream.infoHash) {
+        const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
+        setCurrentMagnet(magnet);
+        setPlayerMode('webtor');
+        setShowPlayer(true);
+        // Scroll to player
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleDirectPlay = () => {
+      setPlayerMode('embed');
+      setShowPlayer(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -98,23 +141,35 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
           <span className="font-medium">Back to Browse</span>
         </button>
 
-        {/* Web Player Overlay */}
+        {/* Player Overlay */}
         {showPlayer && (
-            <div className="mb-8 rounded-2xl overflow-hidden aspect-video bg-black shadow-2xl border border-gray-800 relative animation-fade-in">
-                <button 
-                    onClick={() => setShowPlayer(false)}
-                    className="absolute top-4 right-4 z-20 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md"
-                >
-                    <X className="w-6 h-6" />
-                </button>
-                <iframe 
-                    src={getEmbedUrl()} 
-                    className="w-full h-full" 
-                    frameBorder="0" 
-                    allowFullScreen 
-                    allow="autoplay; encrypted-media; picture-in-picture"
-                    referrerPolicy="origin"
-                ></iframe>
+            <div className="mb-8 rounded-2xl overflow-hidden aspect-video bg-black shadow-2xl border border-gray-800 relative animation-fade-in z-50">
+                <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 pointer-events-none">
+                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-xs font-mono text-white/70 pointer-events-auto border border-white/10">
+                        {playerMode === 'webtor' ? '⚡ Torrent Stream (Webtor)' : '🌐 Web Player (HTTP)'}
+                    </span>
+                    <button 
+                        onClick={() => { setShowPlayer(false); setCurrentMagnet(''); }}
+                        className="bg-black/50 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md pointer-events-auto"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+                
+                {playerMode === 'embed' ? (
+                    <iframe 
+                        src={getEmbedUrl()} 
+                        className="w-full h-full" 
+                        frameBorder="0" 
+                        allowFullScreen 
+                        allow="autoplay; encrypted-media; picture-in-picture"
+                        referrerPolicy="origin"
+                    ></iframe>
+                ) : (
+                    <div id="webtor-player" className="w-full h-full bg-black flex items-center justify-center">
+                        <div className="text-gray-500 animate-pulse">Initializing Secure Stream...</div>
+                    </div>
+                )}
             </div>
         )}
 
@@ -133,11 +188,11 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
             <div className="flex flex-col gap-3">
                 {!showPlayer && (
                     <button 
-                        onClick={() => setShowPlayer(true)}
+                        onClick={handleDirectPlay}
                         className="flex items-center justify-center w-full gap-3 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-purple-900/20 hover:shadow-purple-900/40 transform hover:-translate-y-1"
                     >
                         <PlayCircle className="w-6 h-6" /> 
-                        <span>Play in Browser</span>
+                        <span>Quick Play (Embed)</span>
                     </button>
                 )}
 
@@ -245,13 +300,13 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                   <div className="w-5 h-5 rounded-full bg-gray-600 flex items-center justify-center font-bold">!</div>
                 </div>
                  <div>
-                    <p className="font-semibold mb-1 text-white">About these streams:</p>
-                    <p>These are direct P2P torrent links. <strong>They cannot be played directly in the browser</strong> without a bridge service.</p>
-                    <p className="mt-1 text-gray-400">Click the copy icon to paste into your torrent client, or the arrow to open your default app.</p>
+                    <p className="font-semibold mb-1 text-white">How to watch:</p>
+                    <p>Click <span className="text-emerald-400 font-bold">Stream</span> to play directly in the browser using Webtor.</p>
+                    <p className="mt-1 text-gray-400">Or use "Quick Play" above for a standard web stream.</p>
                  </div>
               </div>
               
-              <StreamList streams={streams} loading={loadingStreams} />
+              <StreamList streams={streams} loading={loadingStreams} onPlay={handleStreamPlay} />
             </div>
           </div>
         </div>
