@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { getTrending, getPopularMovies, getPopularTV, getTopRatedMovies, getTopRatedTV } from '../services/tmdb';
 import { getHistory } from '../services/storage';
@@ -44,6 +45,107 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
     };
     loadData();
   }, []);
+
+  const Top10Row = ({ title, items }: { title: string, items: TMDBResult[] }) => (
+    <div className="mb-12 relative z-10 animate-fade-in">
+      <div className="flex items-center justify-between mb-6 px-4">
+        <div className="flex items-center gap-3">
+            <div className="w-1 h-8 bg-[rgb(var(--primary-color))] rounded-full"></div>
+            <h2 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight uppercase italic">
+                {title}
+            </h2>
+        </div>
+        <div className="hidden md:block h-[1px] flex-1 bg-[var(--border-color)] ml-6 opacity-50"></div>
+        <div className="hidden md:flex items-center gap-2 ml-4 px-3 py-1 rounded border border-[var(--border-color)] text-xs font-bold text-[var(--text-muted)] tracking-widest">
+             TV SHOWS
+        </div>
+      </div>
+      
+      <div className="flex overflow-x-auto space-x-6 px-4 pb-8 custom-scrollbar scroll-smooth snap-x snap-mandatory pt-2">
+        {items.slice(0, 10).map((item, index) => (
+          <div 
+            key={item.id} 
+            className="snap-start relative min-w-[280px] md:min-w-[360px] aspect-[16/9] rounded-xl cursor-pointer group transition-all duration-300 hover:scale-105 hover:z-10"
+            onClick={() => onSelect(item)}
+          >
+             {/* Number Overlay - The "Cool Thing" */}
+             <div className="absolute -left-4 -bottom-6 z-20 font-black text-[140px] leading-none text-[var(--bg-main)] select-none drop-shadow-2xl" 
+                  style={{ WebkitTextStroke: '4px #444', textShadow: '4px 4px 0px #000' }}>
+                {index + 1}
+             </div>
+             <div className="absolute -left-4 -bottom-6 z-30 font-black text-[140px] leading-none text-[var(--bg-main)] select-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+                  style={{ WebkitTextStroke: '2px rgb(var(--primary-color))' }}>
+                {index + 1}
+             </div>
+
+             {/* Image Container */}
+             <div className="w-full h-full rounded-xl overflow-hidden shadow-2xl relative border border-[var(--border-color)] bg-[var(--bg-card)] ml-6 group-hover:ml-8 transition-all duration-300">
+                <img 
+                    src={`${TMDB_IMAGE_BASE}${item.backdrop_path}`} 
+                    alt={item.name} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
+                    loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                
+                {/* Content */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 pl-16">
+                    <img 
+                        src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" 
+                        className="h-4 mb-2 opacity-80 hidden" // Placeholder for network logo if we had it
+                        alt="Network"
+                    />
+                    <h3 className="text-white font-black text-xl md:text-2xl leading-none drop-shadow-lg uppercase italic truncate">
+                        {item.name || item.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-2 text-xs font-bold text-gray-300">
+                         <span className="text-green-400">98% Match</span>
+                         <span>{item.first_air_date?.split('-')[0]}</span>
+                         <span className="border border-gray-500 px-1 rounded text-[10px]">HD</span>
+                    </div>
+                </div>
+             </div>
+          </div>
+        ))}
+        <div className="w-4 shrink-0"></div>
+      </div>
+    </div>
+  );
+
+  const ProvidersRow = () => (
+    <div className="mb-12 px-4 animate-fade-in">
+        <div className="flex items-center gap-3 mb-6">
+            <Film className="w-6 h-6 text-[var(--text-muted)]" />
+            <div>
+                <h3 className="text-xl font-bold text-[var(--text-main)]">Streaming Providers</h3>
+                <p className="text-xs text-[var(--text-muted)]">Browse content from your favorite streaming services</p>
+            </div>
+             <div className="ml-auto flex bg-[var(--bg-card)] rounded-lg border border-[var(--border-color)] p-1">
+                <span className="px-3 py-1 bg-[var(--bg-hover)] text-[var(--text-main)] text-xs font-bold rounded">Movies</span>
+                <span className="px-3 py-1 text-[var(--text-muted)] text-xs font-bold rounded hover:text-[var(--text-main)] cursor-pointer">TV Shows</span>
+             </div>
+        </div>
+        <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-7 gap-4">
+            {[
+                { name: 'Netflix', logo: 'https://image.tmdb.org/t/p/original/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg' },
+                { name: 'Apple TV+', logo: 'https://image.tmdb.org/t/p/original/2E03IAf08tNRR91QtWe3xK1jjM6.jpg' },
+                { name: 'Prime Video', logo: 'https://image.tmdb.org/t/p/original/ifhbNuuVnlwYy5oXA5VIb2Yr8Mf.jpg' },
+                { name: 'Disney+', logo: 'https://image.tmdb.org/t/p/original/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg' },
+                { name: 'HBO Max', logo: 'https://image.tmdb.org/t/p/original/25bAaixmjD89Xj6WdhE714hZ5C7.jpg' },
+                { name: 'Hulu', logo: 'https://image.tmdb.org/t/p/original/zxoFqUQ7CQjr10hAC0M1C6766iO.jpg' },
+                { name: 'Paramount+', logo: 'https://image.tmdb.org/t/p/original/fi83B1oztoS47xxcemFdqbk21Oa.jpg' },
+            ].map((p, i) => (
+                <div key={i} className="group relative aspect-video bg-[var(--bg-card)] rounded-lg border border-[var(--border-color)] overflow-hidden cursor-pointer hover:border-[rgb(var(--primary-color))] transition-colors">
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors z-10">
+                         {/* Fallback text if image fails loading, though these are TMDB static paths */}
+                         <span className="font-bold text-white drop-shadow-md opacity-0 group-hover:opacity-100 transition-opacity">{p.name}</span>
+                    </div>
+                    <img src={p.logo} alt={p.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 grayscale group-hover:grayscale-0" />
+                </div>
+            ))}
+        </div>
+    </div>
+  );
 
   const Row = ({ title, items, icon: Icon }: { title: string, items: TMDBResult[], icon?: React.ElementType }) => (
     <div className="mb-12 relative z-10">
@@ -125,9 +227,13 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
              <Row title="Continue Watching" items={history} icon={Clock} />
           )}
 
-          <Row title="Trending Today" items={trending} icon={TrendingUp} />
+          {/* TOP 10 SHOWS SECTION */}
+          {series.length > 0 && <Top10Row title="TOP 10 Shows" items={series} />}
+          
+          {/* Streaming Providers */}
+          <ProvidersRow />
+
           <Row title="Popular Movies" items={movies} icon={Film} />
-          <Row title="Hit TV Series" items={series} icon={Tv} />
           
           <div className="my-12 border-t border-[var(--border-color)]" />
           
