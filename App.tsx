@@ -26,14 +26,19 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [themeColor, setThemeColor] = useState('147, 51, 234'); // Default Purple
-  const [mode, setMode] = useState<'dark' | 'light'>('dark');
+  
+  // Initialize mode directly from storage to avoid flash
+  const [mode, setMode] = useState<'dark' | 'light'>(getMode());
 
-  // Apply Theme & Mode
+  // Sync Mode to DOM (HTML Tag)
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', mode);
+  }, [mode]);
+
+  // Apply Theme Color from Settings
   useEffect(() => {
     const theme = getTheme();
-    const storedMode = getMode();
-    setMode(storedMode);
-
+    // Mode is already handled by the state initializer, but we sync theme color here
     const colorMap: Record<string, string> = {
         'purple': '147, 51, 234',
         'red': '220, 38, 38',
@@ -158,7 +163,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-sans flex flex-col transition-colors duration-300" style={({ '--primary-color': themeColor } as React.CSSProperties)} data-theme={mode}>
+    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-sans flex flex-col transition-colors duration-300" style={({ '--primary-color': themeColor } as React.CSSProperties)}>
       <Navbar 
         onSearch={handleSearch} 
         onNavigate={handleNavigate} 

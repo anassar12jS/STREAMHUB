@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -106,6 +107,15 @@
         animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         opacity: 0;
       }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.5s ease-in-out forwards;
+      }
+
       .delay-100 { animation-delay: 100ms; }
       .delay-200 { animation-delay: 200ms; }
       .delay-300 { animation-delay: 300ms; }
