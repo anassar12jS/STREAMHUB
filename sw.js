@@ -1,3 +1,4 @@
+
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open('streamhub-store').then((cache) => cache.addAll([

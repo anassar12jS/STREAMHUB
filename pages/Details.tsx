@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { TMDBResult, TMDBDetail, MediaType, Stream, TMDBVideo } from '../types';
 import { getDetails, getVideos, getRecommendations } from '../services/tmdb';

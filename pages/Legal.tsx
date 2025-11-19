@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Shield, Lock, FileText, AlertTriangle } from 'lucide-react';
 

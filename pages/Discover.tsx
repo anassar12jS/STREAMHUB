@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { TMDBResult, MediaType } from '../types';
 import { discoverMedia, getGenres } from '../services/tmdb';
