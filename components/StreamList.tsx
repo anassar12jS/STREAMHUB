@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Stream } from '../types';
-import { Magnet, Play, HardDrive, Copy, Check, PlayCircle, Download, Users } from 'lucide-react';
+import { Magnet, Play, HardDrive, Copy, Check, PlayCircle, Download, Users, Zap } from 'lucide-react';
 
 interface StreamListProps {
   streams: Stream[];
@@ -29,6 +29,9 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
 
       const qualA = getQualityScore(textA);
       const qualB = getQualityScore(textB);
+
+      // Sort Direct (Debrid) links first
+      if (!!a.url !== !!b.url) return !!a.url ? -1 : 1;
 
       if (qualA !== qualB) return qualB - qualA; // Higher quality first
 
@@ -117,14 +120,15 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
             {/* Left: Icon & Details */}
             <div className="flex items-center gap-3 overflow-hidden flex-1 mr-2">
               <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${isDirect ? 'text-blue-400 bg-blue-900/10' : 'text-gray-400 bg-white/5'}`}>
-                {isDirect ? <Play className="w-4 h-4" /> : <Magnet className="w-4 h-4" />}
+                {isDirect ? <Zap className="w-4 h-4 fill-blue-400" /> : <Magnet className="w-4 h-4" />}
               </div>
               
               <div className="min-w-0 flex-1 flex flex-col justify-center">
                 <div className="flex items-center gap-2 text-sm text-gray-200 font-medium leading-tight">
                    <span>{quality}</span>
+                   {isDirect && <span className="text-[10px] bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20">CACHED</span>}
                    {size && <span className="text-xs text-gray-500 font-normal">• {size}</span>}
-                   {seeds && (
+                   {!isDirect && seeds && (
                      <span className="text-xs text-emerald-500 font-normal flex items-center gap-0.5">
                        <Users className="w-3 h-3" /> {seeds}
                      </span>
@@ -138,15 +142,13 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
             
             {/* Right: Actions */}
             <div className="flex items-center gap-1.5 shrink-0">
-                {!isDirect && (
-                  <button
-                    onClick={() => onPlay(stream)}
-                    className="flex items-center gap-1.5 bg-white text-black hover:bg-gray-200 px-3 py-1.5 rounded text-xs font-bold transition-colors"
-                  >
-                    <PlayCircle className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Play</span>
-                  </button>
-                )}
+                <button
+                  onClick={() => onPlay(stream)}
+                  className={`flex items-center gap-1.5 ${isDirect ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-white hover:bg-gray-200 text-black'} px-3 py-1.5 rounded text-xs font-bold transition-colors`}
+                >
+                  <PlayCircle className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Play</span>
+                </button>
 
                 <div className="flex items-center gap-1">
                     <button 

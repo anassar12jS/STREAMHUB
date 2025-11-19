@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Search, Film, Tv, Home, Menu, X } from 'lucide-react';
+import { Search, Film, Menu, X, Settings } from 'lucide-react';
 
 interface NavbarProps {
   onSearch: (query: string) => void;
   onNavigate: (view: string) => void;
+  onOpenSettings: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate, onOpenSettings }) => {
   const [query, setQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -52,14 +53,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate }) => {
             </form>
           </div>
 
-          {/* Mobile menu button */}
-          <div className="-mr-2 flex md:hidden">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
-            >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+          {/* Right Actions */}
+          <div className="flex items-center gap-2">
+             <button 
+               onClick={onOpenSettings}
+               className="p-2 rounded-full hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+               title="Addon Settings"
+             >
+               <Settings className="w-5 h-5" />
+             </button>
+
+            {/* Mobile menu button */}
+            <div className="-mr-2 flex md:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
+              >
+                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </div>
           </div>
         </div>
       </div>

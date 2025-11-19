@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Home } from './pages/Home';
 import { Details } from './pages/Details';
+import { SettingsModal } from './components/SettingsModal';
 import { searchMedia, getDetails } from './services/tmdb';
 import { TMDBResult, MediaType } from './types';
 import { MediaCard } from './components/MediaCard';
@@ -14,6 +15,7 @@ const App: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<TMDBResult | null>(null);
   const [searchResults, setSearchResults] = useState<TMDBResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Initial Load: Check URL parameters for deep linking
   useEffect(() => {
@@ -106,7 +108,11 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white font-sans">
-      <Navbar onSearch={handleSearch} onNavigate={handleNavigate} />
+      <Navbar 
+        onSearch={handleSearch} 
+        onNavigate={handleNavigate} 
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
       
       <main>
         {view === 'home' && <Home onSelect={handleSelect} />}
@@ -139,6 +145,8 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
+
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 };
