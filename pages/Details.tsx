@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { TMDBResult, TMDBDetail, MediaType, Stream, TMDBVideo } from '../types';
 import { getDetails, getVideos } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
-import { getAiInsight } from '../services/geminiService';
 import { TMDB_IMAGE_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
-import { ArrowLeft, Star, Calendar, Clock, Sparkles, Layers, Youtube, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Star, Calendar, Clock, Layers, Youtube, PlayCircle } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -17,7 +16,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [trailer, setTrailer] = useState<TMDBVideo | null>(null);
   const [streams, setStreams] = useState<Stream[]>([]);
   const [loadingStreams, setLoadingStreams] = useState(false);
-  const [aiInsight, setAiInsight] = useState<string>('');
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
 
@@ -33,12 +31,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
         // Prioritize official trailers
         const officialTrailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.find(v => v.site === 'YouTube');
         if (officialTrailer) setTrailer(officialTrailer);
-
-        // Fetch AI Insight
-        if (d.overview) {
-            const insight = await getAiInsight(d.title || d.name || '', d.overview);
-            setAiInsight(insight);
-        }
 
         // Fetch Streams if Movie
         if (item.media_type === MediaType.MOVIE && d.external_ids?.imdb_id) {
@@ -152,19 +144,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                 </span>
               ) : null}
             </div>
-
-            {/* AI Insight Section */}
-            {aiInsight && (
-              <div className="mb-8 p-6 bg-gradient-to-br from-purple-900/30 to-blue-900/10 rounded-2xl border border-purple-500/20 backdrop-blur-sm shadow-lg">
-                <div className="flex items-center gap-2 text-purple-300 font-bold mb-3 text-sm uppercase tracking-wider">
-                  <Sparkles className="w-4 h-4" /> 
-                  Gemini AI Insight
-                </div>
-                <div className="text-gray-200 text-base leading-relaxed font-light whitespace-pre-line">
-                  {aiInsight}
-                </div>
-              </div>
-            )}
 
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-white mb-3">Overview</h3>
