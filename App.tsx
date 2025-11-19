@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
 import { Details } from './pages/Details';
 import { Library } from './pages/Library';
@@ -110,14 +111,14 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white font-sans">
+    <div className="min-h-screen bg-[#0f0f0f] text-white font-sans flex flex-col">
       <Navbar 
         onSearch={handleSearch} 
         onNavigate={handleNavigate} 
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
       
-      <main>
+      <main className="flex-grow">
         {view === 'home' && <Home onSelect={handleSelect} />}
         
         {view === 'library' && <Library onSelect={handleSelect} />}
@@ -151,6 +152,7 @@ const App: React.FC = () => {
         )}
       </main>
 
+      <Footer />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );

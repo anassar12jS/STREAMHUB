@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { TMDBResult, TMDBDetail, MediaType, Stream, TMDBVideo } from '../types';
-import { getDetails, getVideos } from '../services/tmdb';
+import { getDetails, getVideos, getRecommendations } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
 import { isInWatchlist, addToWatchlist, removeFromWatchlist } from '../services/storage';
 import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
-import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check } from 'lucide-react';
+import { MediaCard } from '../components/MediaCard';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check, Sparkles } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -17,6 +18,7 @@ type ServerType = 'cinemaos' | 'vidlink' | 'vidsrc-pro' | 'vidsrc' | 'direct' | 
 export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
   const [trailer, setTrailer] = useState<TMDBVideo | null>(null);
+  const [recommendations, setRecommendations] = useState<TMDBResult[]>([]);
   const [streams, setStreams] = useState<Stream[]>([]);
   const [loadingStreams, setLoadingStreams] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
@@ -45,6 +47,10 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
         const officialTrailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.find(v => v.site === 'YouTube');
         if (officialTrailer) setTrailer(officialTrailer);
 
+        // Fetch Recommendations
+        const recs = await getRecommendations(item.id, item.media_type);
+        setRecommendations(recs.slice(0, 10));
+
         // Fetch Streams if Movie
         if (item.media_type === MediaType.MOVIE && d.external_ids?.imdb_id) {
           setLoadingStreams(true);
@@ -57,6 +63,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
       }
     };
     fetchInfo();
+    window.scrollTo(0,0);
   }, [item]);
 
   // Fetch Streams if TV (Episode change)
@@ -128,6 +135,23 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     }
   };
 
+  // Handle Recommendation Click (Re-uses Detail View)
+  const handleRecClick = (rec: TMDBResult) => {
+     // In a real app this might push history, here we just reload the component by calling parent
+     // But since we are inside the component, we need to trigger the parent's onSelect ideally.
+     // However, since we don't have direct access to setView/setSelectedItem from props easily without threading,
+     // We will just force a reload via window location for simplicity in this context OR better, 
+     // we reuse the onBack logic to go home? No, we want to see details.
+     // The best way in this current architecture is to update the URL and let App.tsx detect it, 
+     // or if we were using a router.
+     // Since App.tsx listens to popstate/URL changes, we can push state.
+     window.history.pushState({ view: 'details', item: rec }, '', `?id=${rec.id}&type=${rec.media_type}`);
+     // We need to dispatch a popstate event manually or just reload the page content
+     // A quick hack for this specific no-router setup:
+     window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'details', item: rec } }));
+     window.scrollTo(0,0);
+  };
+
   if (!detail) {
     return (
       <div className="flex h-screen items-center justify-center flex-col gap-4 bg-[#0f0f0f]">
@@ -186,7 +210,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const posterUrl = detail.poster_path ? `${TMDB_POSTER_BASE}${detail.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster';
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-gray-100 pb-20 font-sans">
+    <div className="min-h-screen bg-[#0f0f0f] text-gray-100 pb-10 font-sans">
       {/* Fixed Background */}
       <div className="fixed inset-0 z-0">
         {backdropUrl && (
@@ -214,7 +238,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
         </div>
 
         {/* Layout Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8 lg:gap-12 mb-20">
             
             {/* Poster Column (Sticky on Desktop) */}
             <div className="hidden lg:block">
@@ -330,12 +354,12 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                                             onChange={(e) => setServer(e.target.value as ServerType)}
                                             className="bg-transparent text-white text-xs font-bold py-1 pr-2 focus:outline-none cursor-pointer"
                                         >
-                                            <option value="cinemaos">CinemaOS (Best)</option>
-                                            <option value="vidlink">VidLink</option>
-                                            <option value="vidsrc-pro">VidSrc Pro</option>
-                                            <option value="vidsrc">VidSrc Legacy</option>
-                                            <option value="direct">Direct Play</option>
-                                            <option value="webtor">P2P Torrent</option>
+                                            <option value="cinemaos" className="bg-black text-gray-200">CinemaOS (Best)</option>
+                                            <option value="vidlink" className="bg-black text-gray-200">VidLink</option>
+                                            <option value="vidsrc-pro" className="bg-black text-gray-200">VidSrc Pro</option>
+                                            <option value="vidsrc" className="bg-black text-gray-200">VidSrc Legacy</option>
+                                            <option value="direct" className="bg-black text-gray-200">Direct Play</option>
+                                            <option value="webtor" className="bg-black text-gray-200">P2P Torrent</option>
                                         </select>
                                     </div>
                                 </div>
@@ -491,6 +515,21 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
 
             </div>
         </div>
+
+        {/* Recommendations Section */}
+        {recommendations.length > 0 && (
+           <div className="mt-12 border-t border-white/10 pt-10">
+               <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                   <Sparkles className="w-5 h-5 text-purple-400" />
+                   You Might Also Like
+               </h2>
+               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                   {recommendations.map(rec => (
+                       <MediaCard key={rec.id} item={rec} onClick={handleRecClick} />
+                   ))}
+               </div>
+           </div>
+        )}
       </div>
     </div>
   );

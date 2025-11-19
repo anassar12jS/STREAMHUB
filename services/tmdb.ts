@@ -26,6 +26,16 @@ export const getPopularTV = async (): Promise<TMDBResult[]> => {
   return data.results.map((t: any) => ({ ...t, media_type: MediaType.TV }));
 };
 
+export const getTopRatedMovies = async (): Promise<TMDBResult[]> => {
+  const data = await fetchTMDB('/movie/top_rated');
+  return data.results.map((m: any) => ({ ...m, media_type: MediaType.MOVIE }));
+};
+
+export const getTopRatedTV = async (): Promise<TMDBResult[]> => {
+  const data = await fetchTMDB('/tv/top_rated');
+  return data.results.map((t: any) => ({ ...t, media_type: MediaType.TV }));
+};
+
 export const searchMedia = async (query: string): Promise<TMDBResult[]> => {
   if (!query) return [];
   const data = await fetchTMDB('/search/multi', { query });
@@ -43,6 +53,15 @@ export const getVideos = async (id: number, type: MediaType): Promise<TMDBVideo[
     return data.results;
   } catch (e) {
     console.warn("Failed to fetch videos", e);
+    return [];
+  }
+};
+
+export const getRecommendations = async (id: number, type: MediaType): Promise<TMDBResult[]> => {
+  try {
+    const data = await fetchTMDB(`/${type}/${id}/recommendations`);
+    return data.results.map((item: any) => ({ ...item, media_type: type }));
+  } catch (e) {
     return [];
   }
 };
