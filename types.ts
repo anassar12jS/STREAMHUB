@@ -104,6 +104,29 @@ export interface WebtorOptions {
   mode?: string;
 }
 
+export interface AniListResult {
+  id: number;
+  title: {
+    romaji: string;
+    english: string;
+    native: string;
+  };
+  coverImage: {
+    large: string;
+    extraLarge: string;
+  };
+  bannerImage: string;
+  description: string;
+  averageScore: number;
+  format: string;
+  status: string;
+  nextAiringEpisode?: {
+    airingAt: number;
+    episode: number;
+  };
+  genres: string[];
+}
+
 declare global {
   interface Window {
     webtor: {

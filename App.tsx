@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -7,6 +8,7 @@ import { Library } from './pages/Library';
 import { Sports } from './pages/Sports';
 import { Discover } from './pages/Discover';
 import { Person } from './pages/Person';
+import { Anime } from './pages/Anime';
 import { DMCA, Privacy, Terms } from './pages/Legal';
 import { SettingsModal } from './components/SettingsModal';
 import { searchMedia, getDetails } from './services/tmdb';
@@ -14,7 +16,7 @@ import { getTheme, getMode, setMode as setStorageMode } from './services/storage
 import { TMDBResult, MediaType } from './types';
 import { MediaCard } from './components/MediaCard';
 
-type ViewState = 'home' | 'details' | 'search' | 'library' | 'sports' | 'discover' | 'person' | 'dmca' | 'privacy' | 'terms';
+type ViewState = 'home' | 'details' | 'search' | 'library' | 'sports' | 'discover' | 'person' | 'anime' | 'dmca' | 'privacy' | 'terms';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('home');
@@ -79,6 +81,8 @@ const App: React.FC = () => {
         setView('sports');
       } else if (hash === '#discover') {
         setView('discover');
+      } else if (hash === '#anime') {
+        setView('anime');
       } else if (hash === '#dmca') {
         setView('dmca');
       } else if (hash === '#privacy') {
@@ -107,6 +111,7 @@ const App: React.FC = () => {
         if (hash === '#library') setView('library');
         else if (hash === '#sports') setView('sports');
         else if (hash === '#discover') setView('discover');
+        else if (hash === '#anime') setView('anime');
         else if (hash === '#dmca') setView('dmca');
         else if (hash === '#privacy') setView('privacy');
         else if (hash === '#terms') setView('terms');
@@ -167,6 +172,7 @@ const App: React.FC = () => {
         {view === 'library' && <Library onSelect={handleSelect} />}
         {view === 'sports' && <Sports />}
         {view === 'discover' && <Discover onSelect={handleSelect} />}
+        {view === 'anime' && <Anime onSelect={handleSelect} />}
         {view === 'person' && selectedPersonId && <Person id={selectedPersonId} onSelect={handleSelect} onBack={handleBack} />}
         {view === 'dmca' && <DMCA />}
         {view === 'privacy' && <Privacy />}

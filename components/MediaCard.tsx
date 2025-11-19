@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TMDBResult, MediaType } from '../types';
 import { TMDB_POSTER_BASE } from '../constants';
@@ -12,7 +13,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onClick }) => {
   const title = item.title || item.name;
   const date = item.release_date || item.first_air_date;
   const year = date ? date.split('-')[0] : 'N/A';
-  const posterUrl = item.poster_path ? `${TMDB_POSTER_BASE}${item.poster_path}` : 'https://picsum.photos/300/450?blur=2';
+  
+  // Handle external URLs (AniList) vs TMDB paths
+  const posterUrl = item.poster_path?.startsWith('http') 
+    ? item.poster_path 
+    : item.poster_path 
+        ? `${TMDB_POSTER_BASE}${item.poster_path}` 
+        : 'https://picsum.photos/300/450?blur=2';
 
   return (
     <div 
