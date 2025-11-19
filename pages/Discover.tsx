@@ -42,11 +42,11 @@ export const Discover: React.FC<DiscoverProps> = ({ onSelect }) => {
     <div className="max-w-7xl mx-auto px-4 py-8 min-h-screen animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
         <div>
-            <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+            <h2 className="text-3xl font-bold text-[var(--text-main)] mb-2 flex items-center gap-3">
                 <Filter className="w-6 h-6 text-[rgb(var(--primary-color))]" />
                 Discover
             </h2>
-            <p className="text-gray-400 text-sm">Find your next favorite from thousands of titles.</p>
+            <p className="text-[var(--text-muted)] text-sm">Find your next favorite from thousands of titles.</p>
         </div>
 
         {/* Filters */}
@@ -54,7 +54,7 @@ export const Discover: React.FC<DiscoverProps> = ({ onSelect }) => {
             <select 
                 value={mediaType}
                 onChange={(e) => { setMediaType(e.target.value as MediaType); setSelectedGenre(undefined); }}
-                className="bg-[#1a1a1a] border border-gray-700 text-white text-sm rounded-lg px-4 py-2.5 focus:border-[rgb(var(--primary-color))] outline-none"
+                className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-sm rounded-lg px-4 py-2.5 focus:border-[rgb(var(--primary-color))] outline-none"
             >
                 <option value="movie">Movies</option>
                 <option value="tv">TV Shows</option>
@@ -63,7 +63,7 @@ export const Discover: React.FC<DiscoverProps> = ({ onSelect }) => {
             <select 
                 value={selectedGenre || ''}
                 onChange={(e) => setSelectedGenre(e.target.value ? Number(e.target.value) : undefined)}
-                className="bg-[#1a1a1a] border border-gray-700 text-white text-sm rounded-lg px-4 py-2.5 focus:border-[rgb(var(--primary-color))] outline-none"
+                className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-sm rounded-lg px-4 py-2.5 focus:border-[rgb(var(--primary-color))] outline-none"
             >
                 <option value="">All Genres</option>
                 {genres.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
@@ -72,7 +72,7 @@ export const Discover: React.FC<DiscoverProps> = ({ onSelect }) => {
             <select 
                 value={selectedYear || ''}
                 onChange={(e) => setSelectedYear(e.target.value ? Number(e.target.value) : undefined)}
-                className="bg-[#1a1a1a] border border-gray-700 text-white text-sm rounded-lg px-4 py-2.5 focus:border-[rgb(var(--primary-color))] outline-none"
+                className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-sm rounded-lg px-4 py-2.5 focus:border-[rgb(var(--primary-color))] outline-none"
             >
                 <option value="">All Years</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
@@ -81,7 +81,7 @@ export const Discover: React.FC<DiscoverProps> = ({ onSelect }) => {
             <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-[#1a1a1a] border border-gray-700 text-white text-sm rounded-lg px-4 py-2.5 focus:border-[rgb(var(--primary-color))] outline-none"
+                className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-sm rounded-lg px-4 py-2.5 focus:border-[rgb(var(--primary-color))] outline-none"
             >
                 <option value="popularity.desc">Most Popular</option>
                 <option value="vote_average.desc">Highest Rated</option>
@@ -94,11 +94,11 @@ export const Discover: React.FC<DiscoverProps> = ({ onSelect }) => {
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {[...Array(10)].map((_, i) => (
-                <div key={i} className="aspect-[2/3] bg-gray-800 rounded-lg animate-pulse"></div>
+                <div key={i} className="aspect-[2/3] bg-[var(--bg-card)] rounded-lg animate-pulse"></div>
             ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">
+        <div className="text-center py-20 text-[var(--text-muted)]">
             No results found matching your filters.
         </div>
       ) : (

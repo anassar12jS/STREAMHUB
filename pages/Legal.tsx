@@ -3,21 +3,21 @@ import { Shield, Lock, FileText, AlertTriangle } from 'lucide-react';
 
 const LegalLayout: React.FC<{ title: string; icon: React.ElementType; children: React.ReactNode }> = ({ title, icon: Icon, children }) => (
   <div className="max-w-4xl mx-auto px-4 py-12 min-h-screen animate-fade-in">
-    <div className="bg-[#161616] border border-white/5 rounded-2xl p-8 md:p-12 shadow-2xl">
-      <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+    <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-8 md:p-12 shadow-2xl">
+      <div className="flex items-center gap-4 mb-8 border-b border-[var(--border-color)] pb-6">
         <div className="bg-[rgb(var(--primary-color))]/10 p-3 rounded-xl">
           <Icon className="w-8 h-8 text-[rgb(var(--primary-color))]" />
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-white">{title}</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-main)]">{title}</h1>
       </div>
       
-      <div className="prose prose-invert max-w-none text-gray-400 space-y-6">
+      <div className="prose prose-invert max-w-none text-[var(--text-muted)] space-y-6">
         {children}
       </div>
 
-      <div className="mt-12 pt-8 border-t border-white/10">
+      <div className="mt-12 pt-8 border-t border-[var(--border-color)]">
         <blockquote className="bg-gradient-to-r from-[rgb(var(--primary-color))]/10 to-transparent border-l-4 border-[rgb(var(--primary-color))] p-6 rounded-r-xl">
-          <p className="text-xl md:text-2xl font-black text-white italic tracking-wide leading-relaxed">
+          <p className="text-xl md:text-2xl font-black text-[var(--text-main)] italic tracking-wide leading-relaxed">
             "If buying isn't owning, then piracy isn't stealing."
           </p>
           <footer className="mt-2 text-sm text-[rgb(var(--primary-color))] font-bold uppercase tracking-widest opacity-80">

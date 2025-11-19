@@ -49,7 +49,7 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
     <div className="mb-12 relative z-10">
       <div className="flex items-center gap-3 mb-5 px-4">
         {Icon && <Icon className="w-6 h-6 text-[rgb(var(--primary-color))]" />}
-        <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">{title}</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-[var(--text-main)] tracking-wide">{title}</h2>
       </div>
       
       <div className="flex overflow-x-auto space-x-4 px-4 pb-4 custom-scrollbar scroll-smooth snap-x snap-mandatory">
@@ -64,7 +64,7 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
   );
 
   return (
-    <div className="min-h-screen pb-20 bg-[#0f0f0f] overflow-x-hidden">
+    <div className="min-h-screen pb-20 bg-[var(--bg-main)] overflow-x-hidden transition-colors duration-300">
       {/* Hero Section */}
       {heroItem && (
         <div className="relative h-[85vh] w-full mb-16 group">
@@ -74,8 +74,10 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
               alt={heroItem.title || heroItem.name} 
               className="w-full h-full object-cover transition-transform duration-[20s] group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/60 to-transparent"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0f0f0f] via-[#0f0f0f]/40 to-transparent"></div>
+            {/* Gradient overlay needs to be handled carefully for light mode. 
+                We keep dark gradient for text readability on hero, but fade to var(--bg-main) at bottom. */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-main)] via-black/60 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[var(--bg-main)] via-black/40 to-transparent"></div>
           </div>
 
           <div className="absolute bottom-0 left-0 w-full px-4 sm:px-8 md:px-12 pb-16 max-w-7xl mx-auto right-0 flex flex-col gap-4">
@@ -127,7 +129,7 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
           <Row title="Popular Movies" items={movies} icon={Film} />
           <Row title="Hit TV Series" items={series} icon={Tv} />
           
-          <div className="my-12 border-t border-white/5" />
+          <div className="my-12 border-t border-[var(--border-color)]" />
           
           <Row title="Highest Rated Movies" items={topRatedMovies} icon={Star} />
           <Row title="Highest Rated Series" items={topRatedSeries} icon={Star} />

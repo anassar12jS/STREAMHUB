@@ -19,25 +19,25 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onClick }) => {
       className="group relative flex-shrink-0 w-[160px] md:w-[200px] cursor-pointer transition-transform duration-300 hover:scale-105 hover:z-10"
       onClick={() => onClick(item)}
     >
-      <div className="aspect-[2/3] rounded-lg overflow-hidden shadow-lg bg-gray-800">
+      <div className="aspect-[2/3] rounded-lg overflow-hidden shadow-lg bg-[var(--bg-card)] relative">
         <img 
           src={posterUrl} 
           alt={title} 
-          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+          className="w-full h-full object-cover transition-opacity duration-300"
           loading="lazy"
         />
         
-        <div className="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold text-yellow-400 flex items-center gap-1">
+        <div className="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold text-yellow-400 flex items-center gap-1 backdrop-blur-sm">
           <Star className="w-3 h-3 fill-yellow-400" />
           {item.vote_average.toFixed(1)}
         </div>
       </div>
 
       <div className="mt-2 px-1">
-        <h3 className="text-sm font-semibold truncate text-gray-200 group-hover:text-white">{title}</h3>
-        <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+        <h3 className="text-sm font-semibold truncate text-[var(--text-main)] group-hover:text-[rgb(var(--primary-color))] transition-colors">{title}</h3>
+        <div className="flex items-center justify-between text-xs text-[var(--text-muted)] mt-1">
           <span>{year}</span>
-          <span className="uppercase border border-gray-700 px-1 rounded text-[10px]">{item.media_type}</span>
+          <span className="uppercase border border-[var(--border-color)] px-1 rounded text-[10px]">{item.media_type}</span>
         </div>
       </div>
     </div>

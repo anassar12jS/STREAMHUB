@@ -10,7 +10,7 @@ import { Person } from './pages/Person';
 import { DMCA, Privacy, Terms } from './pages/Legal';
 import { SettingsModal } from './components/SettingsModal';
 import { searchMedia, getDetails } from './services/tmdb';
-import { getTheme } from './services/storage';
+import { getTheme, getMode, setMode as setStorageMode } from './services/storage';
 import { TMDBResult, MediaType } from './types';
 import { MediaCard } from './components/MediaCard';
 
@@ -24,10 +24,14 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [themeColor, setThemeColor] = useState('147, 51, 234'); // Default Purple
+  const [mode, setMode] = useState<'dark' | 'light'>('dark');
 
-  // Apply Theme
+  // Apply Theme & Mode
   useEffect(() => {
     const theme = getTheme();
+    const storedMode = getMode();
+    setMode(storedMode);
+
     const colorMap: Record<string, string> = {
         'purple': '147, 51, 234',
         'red': '220, 38, 38',
@@ -36,7 +40,13 @@ const App: React.FC = () => {
         'orange': '234, 88, 12'
     };
     setThemeColor(colorMap[theme] || colorMap['purple']);
-  }, [isSettingsOpen]); // Refresh when settings close
+  }, [isSettingsOpen]);
+
+  const toggleMode = () => {
+    const newMode = mode === 'dark' ? 'light' : 'dark';
+    setMode(newMode);
+    setStorageMode(newMode);
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -143,8 +153,14 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white font-sans flex flex-col" style={({ '--primary-color': themeColor } as React.CSSProperties)}>
-      <Navbar onSearch={handleSearch} onNavigate={handleNavigate} onOpenSettings={() => setIsSettingsOpen(true)} />
+    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-sans flex flex-col transition-colors duration-300" style={({ '--primary-color': themeColor } as React.CSSProperties)} data-theme={mode}>
+      <Navbar 
+        onSearch={handleSearch} 
+        onNavigate={handleNavigate} 
+        onOpenSettings={() => setIsSettingsOpen(true)} 
+        currentMode={mode}
+        onToggleMode={toggleMode}
+      />
       
       <main className="flex-grow">
         {view === 'home' && <Home onSelect={handleSelect} />}
@@ -163,11 +179,11 @@ const App: React.FC = () => {
         {view === 'search' && (
           <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">Results for "<span className="text-[rgb(var(--primary-color))]">{searchQuery}</span>"</h2>
-                <button onClick={() => handleNavigate('home')} className="text-sm text-gray-400 hover:text-white">Clear</button>
+                <h2 className="text-2xl font-bold text-[var(--text-main)]">Results for "<span className="text-[rgb(var(--primary-color))]">{searchQuery}</span>"</h2>
+                <button onClick={() => handleNavigate('home')} className="text-sm text-[var(--text-muted)] hover:text-[var(--text-main)]">Clear</button>
              </div>
             {searchResults.length === 0 ? (
-              <div className="text-center text-gray-500 mt-20">No results found.</div>
+              <div className="text-center text-[var(--text-muted)] mt-20">No results found.</div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                 {searchResults.map(item => <MediaCard key={item.id} item={item} onClick={handleSelect} />)}

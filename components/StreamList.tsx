@@ -60,7 +60,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
     return (
       <div className="space-y-2 animate-pulse">
         {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="h-14 bg-white/5 rounded-md w-full"></div>
+          <div key={i} className="h-14 bg-[var(--bg-card)] rounded-md w-full opacity-50"></div>
         ))}
       </div>
     );
@@ -68,12 +68,12 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
 
   if (streams.length === 0) {
     return (
-      <div className="py-12 flex flex-col items-center justify-center text-center bg-white/5 rounded-xl border border-white/5">
-        <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4 text-gray-500">
+      <div className="py-12 flex flex-col items-center justify-center text-center bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]">
+        <div className="w-12 h-12 bg-[var(--bg-hover)] rounded-full flex items-center justify-center mb-4 text-[var(--text-muted)]">
             <HardDrive className="w-6 h-6" />
         </div>
-        <h3 className="text-base font-medium text-gray-300">No streams found</h3>
-        <p className="text-xs text-gray-500 max-w-xs mt-2">
+        <h3 className="text-base font-medium text-[var(--text-main)]">No streams found</h3>
+        <p className="text-xs text-[var(--text-muted)] max-w-xs mt-2">
             Try checking your internet connection or selecting a different title.
         </p>
       </div>
@@ -125,27 +125,27 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
         return (
           <div 
             key={idx}
-            className="group flex items-center justify-between bg-[#0a0a0a] hover:bg-[#161616] p-2.5 rounded-md border border-white/5 transition-colors"
+            className="group flex items-center justify-between bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] p-2.5 rounded-md border border-[var(--border-color)] transition-colors"
           >
             {/* Left: Icon & Details */}
             <div className="flex items-center gap-3 overflow-hidden flex-1 mr-2">
-              <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${isCached ? 'text-blue-400 bg-blue-900/10' : isDirect ? 'text-orange-400 bg-orange-900/10' : 'text-gray-400 bg-white/5'}`}>
-                {isCached ? <Zap className="w-4 h-4 fill-blue-400" /> : isDirect ? <Download className="w-4 h-4" /> : <Magnet className="w-4 h-4" />}
+              <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${isCached ? 'text-blue-500 bg-blue-500/10' : isDirect ? 'text-orange-500 bg-orange-500/10' : 'text-[var(--text-muted)] bg-[var(--bg-hover)]'}`}>
+                {isCached ? <Zap className="w-4 h-4 fill-blue-500" /> : isDirect ? <Download className="w-4 h-4" /> : <Magnet className="w-4 h-4" />}
               </div>
               
               <div className="min-w-0 flex-1 flex flex-col justify-center">
-                <div className="flex items-center gap-2 text-sm text-gray-200 font-medium leading-tight">
+                <div className="flex items-center gap-2 text-sm text-[var(--text-main)] font-medium leading-tight">
                    <span>{quality}</span>
-                   {isCached && <span className="text-[10px] bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 font-bold">⚡ CACHED</span>}
-                   {isDirect && !isCached && <span className="text-[10px] bg-orange-900/30 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/20 font-bold">☁️ DOWNLOAD</span>}
-                   {size && <span className="text-xs text-gray-500 font-normal">• {size}</span>}
+                   {isCached && <span className="text-[10px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded border border-blue-500/20 font-bold">⚡ CACHED</span>}
+                   {isDirect && !isCached && <span className="text-[10px] bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded border border-orange-500/20 font-bold">☁️ DOWNLOAD</span>}
+                   {size && <span className="text-xs text-[var(--text-muted)] font-normal">• {size}</span>}
                    {!isDirect && seeds && (
                      <span className="text-xs text-emerald-500 font-normal flex items-center gap-0.5">
                        <Users className="w-3 h-3" /> {seeds}
                      </span>
                    )}
                 </div>
-                <div className="text-[11px] text-gray-500 font-mono truncate">
+                <div className="text-[11px] text-[var(--text-muted)] font-mono truncate">
                    {source} • {titleLines.slice(0, 1).join(' ')}
                 </div>
               </div>
@@ -155,7 +155,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
             <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => onPlay(stream)}
-                  className={`flex items-center gap-1.5 ${isCached ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-white hover:bg-gray-200 text-black'} px-3 py-1.5 rounded text-xs font-bold transition-colors`}
+                  className={`flex items-center gap-1.5 ${isCached ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[var(--text-main)] hover:opacity-90 text-[var(--bg-main)]'} px-3 py-1.5 rounded text-xs font-bold transition-colors`}
                 >
                   <PlayCircle className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Play</span>
@@ -164,7 +164,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
                 <div className="flex items-center gap-1">
                     <button 
                         onClick={() => handleCopy(stream, idx)}
-                        className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors"
+                        className="p-1.5 hover:bg-[var(--bg-hover)] rounded text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
                         title="Copy Link"
                     >
                         {copiedIndex === idx ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
@@ -172,7 +172,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
                     
                     <button 
                         onClick={() => handleDownload(stream)}
-                        className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors"
+                        className="p-1.5 hover:bg-[var(--bg-hover)] rounded text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
                         title="Download"
                     >
                         <Download className="w-4 h-4" />

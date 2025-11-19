@@ -3,6 +3,7 @@ import { TMDBResult } from '../types';
 const WATCHLIST_KEY = 'streamhub_watchlist';
 const HISTORY_KEY = 'streamhub_history';
 const THEME_KEY = 'streamhub_theme';
+const MODE_KEY = 'streamhub_mode';
 
 // Watchlist
 export const getWatchlist = (): TMDBResult[] => {
@@ -51,11 +52,20 @@ export const addToHistory = (item: TMDBResult) => {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
 };
 
-// Theme
+// Theme Color
 export const getTheme = (): string => {
   return localStorage.getItem(THEME_KEY) || 'purple';
 };
 
 export const setTheme = (color: string) => {
   localStorage.setItem(THEME_KEY, color);
+};
+
+// Light/Dark Mode
+export const getMode = (): 'dark' | 'light' => {
+  return (localStorage.getItem(MODE_KEY) as 'dark' | 'light') || 'dark';
+};
+
+export const setMode = (mode: 'dark' | 'light') => {
+  localStorage.setItem(MODE_KEY, mode);
 };

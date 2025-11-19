@@ -43,7 +43,7 @@ export const Person: React.FC<PersonProps> = ({ id, onSelect, onBack }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 min-h-screen animate-fade-in">
-      <button onClick={onBack} className="flex items-center text-gray-400 hover:text-white mb-6 transition-colors">
+      <button onClick={onBack} className="flex items-center text-[var(--text-muted)] hover:text-[var(--text-main)] mb-6 transition-colors">
         <ArrowLeft className="w-5 h-5 mr-2" /> Back
       </button>
 
@@ -53,9 +53,9 @@ export const Person: React.FC<PersonProps> = ({ id, onSelect, onBack }) => {
         </div>
 
         <div className="flex-1">
-            <h1 className="text-4xl font-bold text-white mb-4 text-center md:text-left">{detail.name}</h1>
+            <h1 className="text-4xl font-bold text-[var(--text-main)] mb-4 text-center md:text-left">{detail.name}</h1>
             
-            <div className="flex flex-wrap justify-center md:justify-start gap-6 text-gray-400 text-sm mb-6">
+            <div className="flex flex-wrap justify-center md:justify-start gap-6 text-[var(--text-muted)] text-sm mb-6">
                 {detail.birthday && (
                     <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-[rgb(var(--primary-color))]" />
@@ -70,14 +70,14 @@ export const Person: React.FC<PersonProps> = ({ id, onSelect, onBack }) => {
                 )}
             </div>
 
-            <h3 className="font-bold text-white mb-2">Biography</h3>
-            <p className="text-gray-400 leading-relaxed text-sm whitespace-pre-line">
+            <h3 className="font-bold text-[var(--text-main)] mb-2">Biography</h3>
+            <p className="text-[var(--text-muted)] leading-relaxed text-sm whitespace-pre-line">
                 {detail.biography || 'No biography available.'}
             </p>
         </div>
       </div>
 
-      <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-800 pb-2">Known For</h2>
+      <h2 className="text-2xl font-bold text-[var(--text-main)] mb-6 border-b border-[var(--border-color)] pb-2">Known For</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
          {credits.map(item => (
              <MediaCard key={item.id} item={item} onClick={onSelect} />
