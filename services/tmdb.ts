@@ -1,3 +1,4 @@
+
 import { TMDB_API_KEY, TMDB_BASE_URL } from '../constants';
 import { TMDBResult, TMDBDetail, TMDBVideo, MediaType, PersonDetail } from '../types';
 
@@ -97,6 +98,11 @@ export const discoverMedia = async (
     include_video: 'false',
     page: '1',
   };
+
+  // FIX: If sorting by rating, require a minimum vote count to filter out obscure titles
+  if (sortBy === 'vote_average.desc') {
+    params['vote_count.gte'] = '1000';
+  }
 
   if (genreId) params.with_genres = genreId.toString();
   if (year) {
