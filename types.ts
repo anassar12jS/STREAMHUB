@@ -50,6 +50,26 @@ export interface StreamResponse {
   streams: Stream[];
 }
 
+export interface SportsTeam {
+  name: string;
+  logo?: string;
+}
+
+export interface SportsMatchSource {
+  source: string;
+  id: string;
+}
+
+export interface SportsMatch {
+  title: string;
+  date: number; // Timestamp
+  category: string;
+  poster?: string;
+  teams?: { home: SportsTeam; away: SportsTeam };
+  sources: SportsMatchSource[];
+  popular?: boolean;
+}
+
 export interface WebtorOptions {
   id: string;
   magnet: string;
@@ -68,5 +88,6 @@ declare global {
     webtor: {
       push: (options: WebtorOptions) => void;
     };
+    Hls?: any;
   }
 }

@@ -4,13 +4,14 @@ import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
 import { Details } from './pages/Details';
 import { Library } from './pages/Library';
+import { Sports } from './pages/Sports';
 import { SettingsModal } from './components/SettingsModal';
 import { searchMedia, getDetails } from './services/tmdb';
 import { TMDBResult, MediaType } from './types';
 import { MediaCard } from './components/MediaCard';
 
 // Define valid view types
-type ViewState = 'home' | 'details' | 'search' | 'library';
+type ViewState = 'home' | 'details' | 'search' | 'library' | 'sports';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('home');
@@ -26,6 +27,7 @@ const App: React.FC = () => {
       const id = params.get('id');
       const type = params.get('type') as MediaType;
       const search = params.get('search');
+      const hash = window.location.hash;
 
       if (id && type) {
         try {
@@ -42,6 +44,10 @@ const App: React.FC = () => {
         const results = await searchMedia(search);
         setSearchResults(results);
         setView('search');
+      } else if (hash === '#library') {
+        setView('library');
+      } else if (hash === '#sports') {
+        setView('sports');
       }
     };
 
@@ -62,7 +68,13 @@ const App: React.FC = () => {
       } else {
         // Fallback for when state is null
         const params = new URLSearchParams(window.location.search);
-        if (!params.get('id') && !params.get('search')) {
+        const hash = window.location.hash;
+        
+        if (hash === '#library') {
+            setView('library');
+        } else if (hash === '#sports') {
+            setView('sports');
+        } else if (!params.get('id') && !params.get('search')) {
             setView('home');
             setSelectedItem(null);
         }
@@ -99,6 +111,10 @@ const App: React.FC = () => {
       setView('library');
       window.history.pushState({ view: 'library' }, '', '#library');
       window.scrollTo(0, 0);
+    } else if (target === 'sports') {
+      setView('sports');
+      window.history.pushState({ view: 'sports' }, '', '#sports');
+      window.scrollTo(0, 0);
     }
   };
 
@@ -122,6 +138,8 @@ const App: React.FC = () => {
         {view === 'home' && <Home onSelect={handleSelect} />}
         
         {view === 'library' && <Library onSelect={handleSelect} />}
+        
+        {view === 'sports' && <Sports />}
         
         {view === 'details' && selectedItem && (
           <Details item={selectedItem} onBack={handleBack} />
