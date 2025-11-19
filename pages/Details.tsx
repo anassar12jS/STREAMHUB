@@ -5,8 +5,6 @@ import { getStreams, getEpisodeStreams } from '../services/addonService';
 import { TMDB_IMAGE_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
 import { ArrowLeft, Star, Calendar, Clock, Layers, Youtube, PlayCircle, Tv, Film, X } from 'lucide-react';
-// @ts-ignore
-import webtor from '@webtor/embed-sdk-js';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -23,6 +21,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [showPlayer, setShowPlayer] = useState(false);
   const [playerMode, setPlayerMode] = useState<'embed' | 'webtor'>('embed');
   const [currentMagnet, setCurrentMagnet] = useState<string>('');
+  const [sdkLoaded, setSdkLoaded] = useState(false);
 
   // Fetch Details
   useEffect(() => {
@@ -64,12 +63,27 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     }
   }, [selectedSeason, selectedEpisode, detail]);
 
+  // Load Webtor SDK dynamically
+  useEffect(() => {
+    if (document.getElementById('webtor-sdk')) {
+      setSdkLoaded(true);
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.id = 'webtor-sdk';
+    script.src = 'https://cdn.jsdelivr.net/npm/@webtor/embed-sdk-js/dist/index.min.js';
+    script.async = true;
+    script.onload = () => setSdkLoaded(true);
+    document.body.appendChild(script);
+  }, []);
+
   // Initialize Webtor Player when conditions are met
   useEffect(() => {
-    if (showPlayer && playerMode === 'webtor' && currentMagnet && detail) {
+    if (showPlayer && playerMode === 'webtor' && currentMagnet && detail && sdkLoaded && window.webtor) {
         // Small timeout to ensure DOM is ready
         const timer = setTimeout(() => {
-            webtor.push({
+            window.webtor.push({
                 id: 'webtor-player',
                 magnet: currentMagnet,
                 width: '100%',
@@ -84,7 +98,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
         }, 100);
         return () => clearTimeout(timer);
     }
-  }, [showPlayer, playerMode, currentMagnet, detail, selectedSeason, selectedEpisode]);
+  }, [showPlayer, playerMode, currentMagnet, detail, selectedSeason, selectedEpisode, sdkLoaded]);
 
   if (!detail) {
     return (
@@ -167,7 +181,14 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                     ></iframe>
                 ) : (
                     <div id="webtor-player" className="w-full h-full bg-black flex items-center justify-center">
-                        <div className="text-gray-500 animate-pulse">Initializing Secure Stream...</div>
+                        {!sdkLoaded ? (
+                            <div className="text-gray-500 flex items-center gap-2">
+                                <div className="animate-spin w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full"></div>
+                                Loading Player SDK...
+                            </div>
+                        ) : (
+                            <div className="text-gray-500 animate-pulse">Initializing Secure Stream...</div>
+                        )}
                     </div>
                 )}
             </div>

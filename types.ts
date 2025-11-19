@@ -62,3 +62,11 @@ export interface WebtorOptions {
   version?: string;
   mode?: string;
 }
+
+declare global {
+  interface Window {
+    webtor: {
+      push: (options: WebtorOptions) => void;
+    };
+  }
+}
