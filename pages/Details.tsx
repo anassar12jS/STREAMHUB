@@ -4,7 +4,7 @@ import { getDetails, getVideos } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
 import { TMDB_IMAGE_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
-import { ArrowLeft, Star, Calendar, Clock, Layers, Youtube, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Star, Calendar, Clock, Layers, Youtube, PlayCircle, Tv, Film, X } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -18,6 +18,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [loadingStreams, setLoadingStreams] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
+  const [showPlayer, setShowPlayer] = useState(false);
 
   // Fetch Details
   useEffect(() => {
@@ -68,6 +69,14 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     );
   }
 
+  const getEmbedUrl = () => {
+    if (item.media_type === MediaType.MOVIE) {
+      return `https://vidsrc.xyz/embed/movie/${item.id}`;
+    } else {
+      return `https://vidsrc.xyz/embed/tv/${item.id}/${selectedSeason}/${selectedEpisode}`;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-gray-100 pb-20 animate-fade-in">
       {/* Background */}
@@ -89,6 +98,26 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
           <span className="font-medium">Back to Browse</span>
         </button>
 
+        {/* Web Player Overlay */}
+        {showPlayer && (
+            <div className="mb-8 rounded-2xl overflow-hidden aspect-video bg-black shadow-2xl border border-gray-800 relative animation-fade-in">
+                <button 
+                    onClick={() => setShowPlayer(false)}
+                    className="absolute top-4 right-4 z-20 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md"
+                >
+                    <X className="w-6 h-6" />
+                </button>
+                <iframe 
+                    src={getEmbedUrl()} 
+                    className="w-full h-full" 
+                    frameBorder="0" 
+                    allowFullScreen 
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    referrerPolicy="origin"
+                ></iframe>
+            </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-12">
           {/* Poster Column */}
           <div className="space-y-6">
@@ -100,26 +129,39 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
               />
             </div>
             
-            {/* Metadata badges */}
-            <div className="flex flex-wrap gap-2 justify-center">
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3">
+                {!showPlayer && (
+                    <button 
+                        onClick={() => setShowPlayer(true)}
+                        className="flex items-center justify-center w-full gap-3 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-purple-900/20 hover:shadow-purple-900/40 transform hover:-translate-y-1"
+                    >
+                        <PlayCircle className="w-6 h-6" /> 
+                        <span>Play in Browser</span>
+                    </button>
+                )}
+
+                {trailer && (
+                <a 
+                    href={`https://www.youtube.com/watch?v=${trailer.key}`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="flex items-center justify-center w-full gap-3 bg-red-600/10 hover:bg-red-600 hover:text-white text-red-500 border border-red-600/50 font-bold py-3 px-4 rounded-xl transition-all"
+                >
+                    <Youtube className="w-6 h-6" /> 
+                    <span>Watch Trailer</span>
+                </a>
+                )}
+            </div>
+            
+             {/* Metadata badges */}
+             <div className="flex flex-wrap gap-2 justify-center">
                 {detail.genres.map(g => (
                   <span key={g.id} className="px-3 py-1 bg-gray-800/80 backdrop-blur-sm text-sm rounded-full text-gray-300 border border-gray-700/50">
                     {g.name}
                   </span>
                 ))}
             </div>
-
-            {trailer && (
-              <a 
-                href={`https://www.youtube.com/watch?v=${trailer.key}`} 
-                target="_blank" 
-                rel="noreferrer"
-                className="flex items-center justify-center w-full gap-3 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-red-900/20 hover:shadow-red-900/40 transform hover:-translate-y-1"
-              >
-                <Youtube className="w-6 h-6" /> 
-                <span>Watch Trailer</span>
-              </a>
-            )}
           </div>
 
           {/* Content Column */}
@@ -156,7 +198,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
             {item.media_type === MediaType.TV && (
               <div className="mb-10 p-6 bg-gray-900/60 rounded-xl border border-gray-700/50">
                 <div className="flex items-center gap-2 mb-4 text-white font-semibold text-lg">
-                  <PlayCircle className="w-5 h-5 text-purple-500" /> Select Episode
+                  <Tv className="w-5 h-5 text-purple-500" /> Select Episode
                 </div>
                 <div className="flex gap-6 flex-wrap">
                   <div className="flex flex-col gap-1.5">
@@ -187,8 +229,8 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
             <div className="border-t border-gray-800 pt-8 mt-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                  <span className="w-1.5 h-8 bg-purple-600 rounded-full block shadow-[0_0_15px_rgba(147,51,234,0.6)]"></span>
-                  Available Streams
+                  <Film className="w-6 h-6 text-purple-500" />
+                  Torrent Streams
                 </h2>
                 {loadingStreams && (
                     <div className="flex items-center gap-2 text-purple-400 text-sm font-medium animate-pulse">
@@ -198,22 +240,14 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                 )}
               </div>
               
-              <div className="bg-blue-900/10 border border-blue-800/30 p-4 rounded-lg mb-6 text-sm text-blue-200 flex gap-3 items-start">
+              <div className="bg-gray-800/40 border border-gray-700/50 p-4 rounded-lg mb-6 text-sm text-gray-300 flex gap-3 items-start">
                 <div className="mt-0.5 shrink-0">
-                  <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center">i</div>
+                  <div className="w-5 h-5 rounded-full bg-gray-600 flex items-center justify-center font-bold">!</div>
                 </div>
                  <div>
-                    <p className="font-semibold mb-1">How to watch:</p>
-                    <ul className="space-y-1.5 text-blue-300/80">
-                      <li className="flex items-center gap-2">
-                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                         <span><strong>Play Button:</strong> Direct stream. May work in-browser or require a player extension.</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                         <span><strong>Magnet Button:</strong> Opens external Torrent Client (uTorrent, qBittorrent).</span>
-                      </li>
-                    </ul>
+                    <p className="font-semibold mb-1 text-white">About these streams:</p>
+                    <p>These are direct P2P torrent links. <strong>They cannot be played directly in the browser</strong> without a bridge service.</p>
+                    <p className="mt-1 text-gray-400">Click the copy icon to paste into your torrent client, or the arrow to open your default app.</p>
                  </div>
               </div>
               

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Stream } from '../types';
-import { Download, Magnet, Play, HardDrive, AlertCircle } from 'lucide-react';
+import { Magnet, Play, HardDrive, Copy, ExternalLink, Check } from 'lucide-react';
 
 interface StreamListProps {
   streams: Stream[];
@@ -8,6 +8,8 @@ interface StreamListProps {
 }
 
 export const StreamList: React.FC<StreamListProps> = ({ streams, loading }) => {
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-3 mt-4">
@@ -30,12 +32,21 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading }) => {
     );
   }
 
-  const handleStreamClick = (stream: Stream) => {
+  const handleCopy = (stream: Stream, index: number) => {
     if (stream.url) {
-      // Direct HTTP stream
+      navigator.clipboard.writeText(stream.url);
+    } else if (stream.infoHash) {
+      const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
+      navigator.clipboard.writeText(magnet);
+    }
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const handleOpen = (stream: Stream) => {
+    if (stream.url) {
       window.open(stream.url, '_blank');
     } else if (stream.infoHash) {
-      // Magnet link
       const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
       window.location.href = magnet;
     }
@@ -61,13 +72,12 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading }) => {
         const isDirect = !!stream.url;
 
         return (
-          <button 
+          <div 
             key={idx}
-            onClick={() => handleStreamClick(stream)}
-            className="w-full text-left flex items-center justify-between bg-gray-800/40 hover:bg-gray-700/60 p-3 rounded-lg cursor-pointer transition-all group border border-gray-700/50 hover:border-gray-600 relative overflow-hidden"
+            className="w-full flex items-center justify-between bg-gray-800/40 p-3 rounded-lg border border-gray-700/50 hover:border-gray-600 transition-colors group"
           >
-            <div className="flex items-center gap-4 z-10">
-              <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-colors shrink-0 ${isDirect ? 'bg-blue-900/50 text-blue-400 group-hover:bg-blue-600 group-hover:text-white' : 'bg-emerald-900/50 text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white'}`}>
+            <div className="flex items-center gap-4 overflow-hidden">
+              <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${isDirect ? 'bg-blue-900/50 text-blue-400' : 'bg-emerald-900/50 text-emerald-400'}`}>
                 {isDirect ? <Play className="w-5 h-5 ml-0.5" /> : <Magnet className="w-5 h-5" />}
               </div>
               <div className="min-w-0">
@@ -83,21 +93,23 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading }) => {
               </div>
             </div>
             
-            <div className="flex items-center gap-3 z-10 pl-4 shrink-0">
-               {isDirect ? (
-                 <div className="flex flex-col items-end">
-                    <span className="text-xs font-bold text-blue-400 uppercase tracking-wider hidden sm:block">Play Now</span>
-                 </div>
-               ) : (
-                 <div className="flex flex-col items-end">
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider hidden sm:block">Magnet</span>
-                 </div>
-               )}
+            <div className="flex items-center gap-2 pl-2 shrink-0">
+                <button 
+                    onClick={() => handleCopy(stream, idx)}
+                    className="p-2 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-colors"
+                    title="Copy Link"
+                >
+                    {copiedIndex === idx ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                </button>
+                <button 
+                    onClick={() => handleOpen(stream)}
+                    className="p-2 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-colors"
+                    title={isDirect ? "Open URL" : "Open in App"}
+                >
+                    <ExternalLink className="w-4 h-4" />
+                </button>
             </div>
-            
-            {/* Hover Effect Background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out pointer-events-none" />
-          </button>
+          </div>
         );
       })}
     </div>
