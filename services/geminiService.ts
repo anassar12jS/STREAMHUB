@@ -1,24 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Safely access API key. In a browser via direct import, 'process' might not be defined.
-// We try to access it safely.
-let apiKey = '';
-try {
-  if (typeof process !== 'undefined' && process.env) {
-    apiKey = process.env.API_KEY || '';
-  }
-} catch (e) {
-  // Ignore error if process is not defined
-}
-
-const ai = new GoogleGenAI({ apiKey });
+// The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+// We assume this variable is pre-configured, valid, and accessible in the execution context.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getAiInsight = async (title: string, overview: string) => {
-  if (!apiKey) {
-    console.warn("Gemini API Key missing");
-    return "";
-  }
-
   try {
     const model = 'gemini-2.5-flash';
     const prompt = `
