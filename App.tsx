@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Home } from './pages/Home';
 import { Details } from './pages/Details';
+import { Library } from './pages/Library';
 import { SettingsModal } from './components/SettingsModal';
 import { searchMedia, getDetails } from './services/tmdb';
 import { TMDBResult, MediaType } from './types';
 import { MediaCard } from './components/MediaCard';
 
 // Define valid view types
-type ViewState = 'home' | 'details' | 'search';
+type ViewState = 'home' | 'details' | 'search' | 'library';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('home');
@@ -31,7 +32,6 @@ const App: React.FC = () => {
           const details = await getDetails(parseInt(id), type);
           setSelectedItem(details);
           setView('details');
-          // We don't need to pushState here as we are already on the URL
         } catch (e) {
           console.error("Failed to load item from URL", e);
           setView('home');
@@ -59,7 +59,7 @@ const App: React.FC = () => {
            searchMedia(event.state.query).then(setSearchResults);
         }
       } else {
-        // Fallback for when state is null (e.g. manually typing URL then going back)
+        // Fallback for when state is null
         const params = new URLSearchParams(window.location.search);
         if (!params.get('id') && !params.get('search')) {
             setView('home');
@@ -92,13 +92,16 @@ const App: React.FC = () => {
   const handleNavigate = (target: string) => {
     if (target === 'home') {
       setView('home');
-      window.history.pushState({ view: 'home' }, '', window.location.pathname); // Clear query params
+      window.history.pushState({ view: 'home' }, '', window.location.pathname);
+      window.scrollTo(0, 0);
+    } else if (target === 'library') {
+      setView('library');
+      window.history.pushState({ view: 'library' }, '', '#library');
       window.scrollTo(0, 0);
     }
   };
 
   const handleBack = () => {
-    // If we have history, go back. If not (direct landing), go home.
     if (window.history.length > 1) {
       window.history.back();
     } else {
@@ -116,6 +119,8 @@ const App: React.FC = () => {
       
       <main>
         {view === 'home' && <Home onSelect={handleSelect} />}
+        
+        {view === 'library' && <Library onSelect={handleSelect} />}
         
         {view === 'details' && selectedItem && (
           <Details item={selectedItem} onBack={handleBack} />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Film, Menu, X, Settings } from 'lucide-react';
+import { Search, Film, Menu, X, Settings, Bookmark } from 'lucide-react';
 
 interface NavbarProps {
   onSearch: (query: string) => void;
@@ -34,8 +34,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate, onOpenSett
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
               <button onClick={() => onNavigate('home')} className="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors">Home</button>
-              <button className="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors text-gray-400 cursor-not-allowed">Movies</button>
-              <button className="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors text-gray-400 cursor-not-allowed">Series</button>
+              <button onClick={() => onNavigate('library')} className="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2">
+                <Bookmark className="w-4 h-4" /> Library
+              </button>
             </div>
           </div>
 
@@ -91,6 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate, onOpenSett
             </form>
             <div className="mt-4 space-y-2">
               <button onClick={() => { onNavigate('home'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-800">Home</button>
+              <button onClick={() => { onNavigate('library'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-800">My Library</button>
             </div>
         </div>
       )}

@@ -2,16 +2,17 @@ import React, { useEffect, useState, useRef } from 'react';
 import { TMDBResult, TMDBDetail, MediaType, Stream, TMDBVideo } from '../types';
 import { getDetails, getVideos } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
+import { isInWatchlist, addToWatchlist, removeFromWatchlist } from '../services/storage';
 import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
-import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info } from 'lucide-react';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
   onBack: () => void;
 }
 
-type ServerType = 'vidlink' | 'vidsrc' | 'vidsrc-pro' | 'webtor' | 'direct';
+type ServerType = 'cinemaos' | 'vidlink' | 'vidsrc-pro' | 'vidsrc' | 'direct' | 'webtor';
 
 export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
@@ -20,10 +21,11 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [loadingStreams, setLoadingStreams] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
+  const [inLibrary, setInLibrary] = useState(false);
   
   // Player State
   const [showPlayer, setShowPlayer] = useState(false);
-  const [server, setServer] = useState<ServerType>('vidlink');
+  const [server, setServer] = useState<ServerType>('cinemaos');
   const [currentMagnet, setCurrentMagnet] = useState<string>('');
   const [directUrl, setDirectUrl] = useState<string>('');
   const [videoError, setVideoError] = useState(false);
@@ -36,6 +38,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
       try {
         const d = await getDetails(item.id, item.media_type);
         setDetail(d);
+        setInLibrary(isInWatchlist(item.id));
         
         // Fetch Videos
         const videos = await getVideos(item.id, item.media_type);
@@ -87,7 +90,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   // Initialize Webtor Player
   useEffect(() => {
     if (showPlayer && server === 'webtor' && currentMagnet && detail && sdkLoaded && window.webtor) {
-        // Clear previous instance if any
         const container = document.getElementById('webtor-player');
         if (container) container.innerHTML = '';
 
@@ -116,6 +118,16 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     }
   }, [showPlayer]);
 
+  const toggleLibrary = () => {
+    if (inLibrary) {
+      removeFromWatchlist(item.id);
+      setInLibrary(false);
+    } else {
+      addToWatchlist(item);
+      setInLibrary(true);
+    }
+  };
+
   if (!detail) {
     return (
       <div className="flex h-screen items-center justify-center flex-col gap-4 bg-[#0f0f0f]">
@@ -131,6 +143,10 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     const e = selectedEpisode;
 
     switch (server) {
+      case 'cinemaos':
+        return item.media_type === MediaType.MOVIE
+          ? `https://cinemaos.tech/player/${id}`
+          : `https://cinemaos.tech/player/${id}/${s}/${e}`;
       case 'vidlink':
         return item.media_type === MediaType.MOVIE 
           ? `https://vidlink.pro/movie/${id}?primaryColor=a855f7` 
@@ -162,8 +178,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   };
 
   const handleDirectPlay = () => {
-      // Reset to VidLink as it is the fastest default
-      setServer('vidlink');
+      setServer('cinemaos'); // Default to CinemaOS
       setShowPlayer(true);
   };
 
@@ -194,7 +209,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
             className="flex items-center text-gray-400 hover:text-white transition-colors"
             >
             <ArrowLeft className="w-5 h-5 mr-2" />
-            <span className="font-medium">Back to Home</span>
+            <span className="font-medium">Back</span>
             </button>
         </div>
 
@@ -203,7 +218,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
             
             {/* Poster Column (Sticky on Desktop) */}
             <div className="hidden lg:block">
-                <div className="sticky top-24 space-y-6">
+                <div className="sticky top-24 space-y-4">
                     <div className="rounded-lg overflow-hidden shadow-2xl shadow-black/80 border border-white/10 aspect-[2/3]">
                         <img src={posterUrl} alt={detail.title} className="w-full h-full object-cover" />
                     </div>
@@ -216,24 +231,34 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                         <span>Play Now</span>
                     </button>
 
-                    {trailer && (
-                        <a 
-                            href={`https://www.youtube.com/watch?v=${trailer.key}`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="flex items-center justify-center w-full gap-2 bg-[#222] text-white border border-white/10 font-medium py-3 rounded hover:bg-[#333] transition-colors"
+                    <div className="grid grid-cols-2 gap-3">
+                        <button 
+                            onClick={toggleLibrary}
+                            className={`flex items-center justify-center gap-2 border font-medium py-3 rounded transition-colors ${inLibrary ? 'bg-purple-600/20 border-purple-500 text-purple-400' : 'bg-[#222] border-white/10 text-white hover:bg-[#333]'}`}
                         >
-                            <Youtube className="w-5 h-5 text-red-600" /> 
-                            <span>Watch Trailer</span>
-                        </a>
-                    )}
+                            {inLibrary ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />} 
+                            <span>{inLibrary ? 'Saved' : 'My List'}</span>
+                        </button>
+
+                        {trailer && (
+                            <a 
+                                href={`https://www.youtube.com/watch?v=${trailer.key}`} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="flex items-center justify-center gap-2 bg-[#222] text-white border border-white/10 font-medium py-3 rounded hover:bg-[#333] transition-colors"
+                            >
+                                <Youtube className="w-5 h-5 text-red-600" /> 
+                                <span>Trailer</span>
+                            </a>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Content Column */}
             <div className="flex flex-col min-w-0">
                 
-                {/* Mobile Header (Poster + Basic Info) */}
+                {/* Mobile Header */}
                 <div className="lg:hidden flex gap-4 mb-6">
                     <div className="w-28 shrink-0 rounded overflow-hidden shadow-lg border border-white/10 aspect-[2/3]">
                         <img src={posterUrl} className="w-full h-full object-cover" />
@@ -246,12 +271,20 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                             <span>•</span>
                             <span>{detail.release_date?.split('-')[0] || 'N/A'}</span>
                          </div>
-                         <button 
-                             onClick={handleDirectPlay}
-                             className="mt-2 bg-white text-black text-xs font-bold py-2 px-4 rounded w-fit flex items-center gap-2"
-                        >
-                             <PlayCircle className="w-4 h-4" /> Play Now
-                         </button>
+                         <div className="flex gap-2 mt-2">
+                            <button 
+                                onClick={handleDirectPlay}
+                                className="bg-white text-black text-xs font-bold py-2 px-4 rounded flex items-center gap-2"
+                            >
+                                <PlayCircle className="w-4 h-4" /> Play
+                            </button>
+                            <button 
+                                onClick={toggleLibrary}
+                                className={`text-xs font-bold py-2 px-3 rounded flex items-center gap-2 border ${inLibrary ? 'bg-purple-600/20 border-purple-500 text-purple-400' : 'border-white/20 text-white'}`}
+                            >
+                                {inLibrary ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                            </button>
+                         </div>
                     </div>
                 </div>
 
@@ -284,11 +317,10 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                     </p>
                 </div>
 
-                {/* Player (Expandable) */}
+                {/* Player */}
                 {showPlayer && (
                     <div ref={playerRef} className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800 relative group">
-                            {/* Player Controls Overlay */}
                             <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10">
@@ -298,11 +330,12 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                                             onChange={(e) => setServer(e.target.value as ServerType)}
                                             className="bg-transparent text-white text-xs font-bold py-1 pr-2 focus:outline-none cursor-pointer"
                                         >
-                                            <option value="vidlink">VidLink (Fastest)</option>
+                                            <option value="cinemaos">CinemaOS (Best)</option>
+                                            <option value="vidlink">VidLink</option>
                                             <option value="vidsrc-pro">VidSrc Pro</option>
                                             <option value="vidsrc">VidSrc Legacy</option>
                                             <option value="direct">Direct Play</option>
-                                            <option value="webtor">P2P Torrent (Slow)</option>
+                                            <option value="webtor">P2P Torrent</option>
                                         </select>
                                     </div>
                                 </div>
@@ -314,7 +347,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                                 </button>
                             </div>
                             
-                            {/* Logic for different players */}
                             {server === 'direct' ? (
                                 <div className="w-full h-full bg-black flex items-center justify-center relative">
                                      {!videoError ? (
@@ -331,7 +363,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                                             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
                                             <p className="text-white font-bold mb-2">Playback Failed</p>
                                             <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
-                                                The browser cannot play this file format natively (likely MKV). 
+                                                The browser cannot play this file format natively. 
                                                 Please download it or use an external player like VLC.
                                             </p>
                                             <a 
@@ -340,7 +372,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                                                 rel="noreferrer"
                                                 className="inline-flex items-center gap-2 bg-white text-black px-6 py-2 rounded font-bold hover:bg-gray-200 transition-colors"
                                             >
-                                                <Download className="w-4 h-4" /> Download / Open
+                                                <Download className="w-4 h-4" /> Download
                                             </a>
                                         </div>
                                      )}
@@ -368,16 +400,15 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                         </div>
                         {server === 'webtor' && (
                             <p className="text-xs text-center text-yellow-500/80 mt-3 font-mono">
-                                Note: P2P streaming relies on seeds. It may be slow or fail for older content. 
-                                Switch to "VidLink" for instant playback.
+                                Note: P2P streaming relies on seeds. Use "CinemaOS" for instant playback.
                             </p>
                         )}
                         {server === 'direct' && !videoError && (
                              <div className="mt-3 flex items-start justify-center gap-2 text-xs text-gray-400 bg-white/5 p-3 rounded border border-white/5">
                                 <Info className="w-4 h-4 shrink-0 text-blue-400" />
                                 <p>
-                                    <span className="text-gray-200 font-bold">Seeing a green "Downloading" screen?</span> This means the file is not yet cached on the Debrid server. 
-                                    Please try a stream marked <span className="text-blue-400 font-bold">⚡ CACHED</span> or wait for the download to finish.
+                                    <span className="text-gray-200 font-bold">Green Screen?</span> The file is downloading to the server. 
+                                    Try a <span className="text-blue-400 font-bold">⚡ CACHED</span> stream.
                                 </p>
                              </div>
                         )}
