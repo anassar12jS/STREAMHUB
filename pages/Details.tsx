@@ -4,12 +4,14 @@ import { getDetails, getVideos } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
 import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
-import { ArrowLeft, Star, Calendar, Clock, Layers, Youtube, PlayCircle, Tv, Film, X, Share2 } from 'lucide-react';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
   onBack: () => void;
 }
+
+type ServerType = 'vidlink' | 'vidsrc' | 'vidsrc-pro' | 'webtor';
 
 export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
@@ -18,8 +20,10 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   const [loadingStreams, setLoadingStreams] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
+  
+  // Player State
   const [showPlayer, setShowPlayer] = useState(false);
-  const [playerMode, setPlayerMode] = useState<'embed' | 'webtor'>('embed');
+  const [server, setServer] = useState<ServerType>('vidlink');
   const [currentMagnet, setCurrentMagnet] = useState<string>('');
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
@@ -80,7 +84,11 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
 
   // Initialize Webtor Player
   useEffect(() => {
-    if (showPlayer && playerMode === 'webtor' && currentMagnet && detail && sdkLoaded && window.webtor) {
+    if (showPlayer && server === 'webtor' && currentMagnet && detail && sdkLoaded && window.webtor) {
+        // Clear previous instance if any
+        const container = document.getElementById('webtor-player');
+        if (container) container.innerHTML = '';
+
         const timer = setTimeout(() => {
             window.webtor.push({
                 id: 'webtor-player',
@@ -97,7 +105,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
         }, 100);
         return () => clearTimeout(timer);
     }
-  }, [showPlayer, playerMode, currentMagnet, detail, selectedSeason, selectedEpisode, sdkLoaded]);
+  }, [showPlayer, server, currentMagnet, detail, selectedSeason, selectedEpisode, sdkLoaded]);
 
   // Scroll to player
   useEffect(() => {
@@ -116,10 +124,24 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
   }
 
   const getEmbedUrl = () => {
-    if (item.media_type === MediaType.MOVIE) {
-      return `https://vidsrc.xyz/embed/movie/${item.id}`;
-    } else {
-      return `https://vidsrc.xyz/embed/tv/${item.id}/${selectedSeason}/${selectedEpisode}`;
+    const id = item.id;
+    const s = selectedSeason;
+    const e = selectedEpisode;
+
+    switch (server) {
+      case 'vidlink':
+        return item.media_type === MediaType.MOVIE 
+          ? `https://vidlink.pro/movie/${id}?primaryColor=a855f7` 
+          : `https://vidlink.pro/tv/${id}/${s}/${e}?primaryColor=a855f7`;
+      case 'vidsrc-pro':
+        return item.media_type === MediaType.MOVIE
+          ? `https://vidsrc.to/embed/movie/${id}`
+          : `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
+      case 'vidsrc':
+      default:
+        return item.media_type === MediaType.MOVIE 
+          ? `https://vidsrc.xyz/embed/movie/${id}` 
+          : `https://vidsrc.xyz/embed/tv/${id}/${s}/${e}`;
     }
   };
 
@@ -127,13 +149,14 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
     if (stream.infoHash) {
         const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
         setCurrentMagnet(magnet);
-        setPlayerMode('webtor');
+        setServer('webtor');
         setShowPlayer(true);
     }
   };
 
   const handleDirectPlay = () => {
-      setPlayerMode('embed');
+      // Reset to VidLink as it is the fastest default
+      setServer('vidlink');
       setShowPlayer(true);
   };
 
@@ -180,9 +203,9 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                     
                     <button 
                         onClick={handleDirectPlay}
-                        className="flex items-center justify-center w-full gap-2 bg-white text-black font-bold py-3 rounded hover:bg-gray-200 transition-colors"
+                        className="flex items-center justify-center w-full gap-2 bg-white text-black font-bold py-3 rounded hover:bg-gray-200 transition-colors group"
                     >
-                        <PlayCircle className="w-5 h-5" /> 
+                        <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" /> 
                         <span>Play Now</span>
                     </button>
 
@@ -218,9 +241,9 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                          </div>
                          <button 
                              onClick={handleDirectPlay}
-                             className="mt-2 bg-white text-black text-xs font-bold py-2 px-4 rounded w-fit"
+                             className="mt-2 bg-white text-black text-xs font-bold py-2 px-4 rounded w-fit flex items-center gap-2"
                         >
-                             Play Now
+                             <PlayCircle className="w-4 h-4" /> Play Now
                          </button>
                     </div>
                 </div>
@@ -257,21 +280,33 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                 {/* Player (Expandable) */}
                 {showPlayer && (
                     <div ref={playerRef} className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
-                        <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800 relative">
-                            {/* Player Header overlay */}
-                            <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 pointer-events-none bg-gradient-to-b from-black/80 to-transparent">
-                                <span className="text-xs font-bold bg-black/50 px-2 py-1 rounded text-white backdrop-blur-sm border border-white/10">
-                                    {playerMode === 'webtor' ? 'P2P STREAM' : 'HTTP STREAM'}
-                                </span>
+                        <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800 relative group">
+                            {/* Player Controls Overlay */}
+                            <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10">
+                                        <Server className="w-4 h-4 text-purple-400 ml-2" />
+                                        <select 
+                                            value={server}
+                                            onChange={(e) => setServer(e.target.value as ServerType)}
+                                            className="bg-transparent text-white text-xs font-bold py-1 pr-2 focus:outline-none cursor-pointer"
+                                        >
+                                            <option value="vidlink">VidLink (Fastest)</option>
+                                            <option value="vidsrc-pro">VidSrc Pro</option>
+                                            <option value="vidsrc">VidSrc Legacy</option>
+                                            <option value="webtor">P2P Torrent (Slow)</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 <button 
                                     onClick={() => { setShowPlayer(false); setCurrentMagnet(''); }}
-                                    className="bg-black/50 hover:bg-red-600 text-white p-2 rounded-full transition-colors pointer-events-auto"
+                                    className="bg-black/60 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md border border-white/10"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
                             
-                            {playerMode === 'embed' ? (
+                            {server !== 'webtor' ? (
                                 <iframe 
                                     src={getEmbedUrl()} 
                                     className="w-full h-full" 
@@ -281,21 +316,24 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                                     referrerPolicy="origin"
                                 ></iframe>
                             ) : (
-                                <div id="webtor-player" className="w-full h-full bg-black flex items-center justify-center">
-                                    {!sdkLoaded ? (
-                                        <div className="text-gray-500 flex items-center gap-3">
-                                            <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
-                                            <span className="font-medium">Loading Player...</span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-2 text-gray-500 animate-pulse">
-                                            <div className="w-8 h-8 rounded-full border-2 border-gray-600 border-t-gray-300 animate-spin"></div>
-                                            <span className="text-xs font-mono">CONNECTING TO PEERS...</span>
-                                        </div>
-                                    )}
+                                <div id="webtor-player" className="w-full h-full bg-black flex items-center justify-center relative">
+                                    {/* Overlay Warning for P2P */}
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                                         <div className="bg-black/80 p-4 rounded text-center">
+                                            <Zap className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+                                            <p className="text-sm font-bold text-white">P2P Stream Active</p>
+                                            <p className="text-xs text-gray-400">Waiting for peers...</p>
+                                         </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
+                        {server === 'webtor' && (
+                            <p className="text-xs text-center text-yellow-500/80 mt-3 font-mono">
+                                Note: P2P streaming relies on seeds. It may be slow or fail for older content. 
+                                Switch to "VidLink" for instant playback.
+                            </p>
+                        )}
                     </div>
                 )}
 
@@ -352,7 +390,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold text-white flex items-center gap-2">
                             <Film className="w-5 h-5 text-gray-400" />
-                            Streams
+                            Torrent Streams
                         </h2>
                         {loadingStreams && (
                             <span className="text-xs text-gray-500 animate-pulse uppercase font-bold tracking-wider">Searching...</span>
