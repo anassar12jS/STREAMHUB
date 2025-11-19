@@ -1,5 +1,5 @@
 import { TMDB_API_KEY, TMDB_BASE_URL } from '../constants';
-import { TMDBResult, TMDBDetail, MediaType } from '../types';
+import { TMDBResult, TMDBDetail, TMDBVideo, MediaType } from '../types';
 
 const fetchTMDB = async (endpoint: string, params: Record<string, string> = {}) => {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
@@ -35,4 +35,14 @@ export const searchMedia = async (query: string): Promise<TMDBResult[]> => {
 export const getDetails = async (id: number, type: MediaType): Promise<TMDBDetail> => {
   const data = await fetchTMDB(`/${type}/${id}`, { append_to_response: 'external_ids' });
   return { ...data, media_type: type };
+};
+
+export const getVideos = async (id: number, type: MediaType): Promise<TMDBVideo[]> => {
+  try {
+    const data = await fetchTMDB(`/${type}/${id}/videos`);
+    return data.results;
+  } catch (e) {
+    console.warn("Failed to fetch videos", e);
+    return [];
+  }
 };

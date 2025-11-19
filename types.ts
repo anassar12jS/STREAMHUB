@@ -25,6 +25,14 @@ export interface TMDBDetail extends TMDBResult {
   number_of_seasons?: number;
 }
 
+export interface TMDBVideo {
+  id: string;
+  key: string;
+  site: string;
+  type: string;
+  name: string;
+}
+
 export interface Stream {
   name?: string;
   title?: string;
