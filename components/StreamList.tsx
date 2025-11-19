@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Stream } from '../types';
-import { Magnet, Play, HardDrive, Copy, ExternalLink, Check, PlayCircle } from 'lucide-react';
+import { Magnet, Play, HardDrive, Copy, Check, PlayCircle, Download, Users } from 'lucide-react';
 
 interface StreamListProps {
   streams: Stream[];
@@ -11,11 +11,45 @@ interface StreamListProps {
 export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
+  // Sorting and Parsing Logic
+  const sortedStreams = useMemo(() => {
+    return [...streams].sort((a, b) => {
+      const getText = (s: Stream) => (s.title || '') + (s.name || '');
+      const textA = getText(a).toLowerCase();
+      const textB = getText(b).toLowerCase();
+
+      // Quality Score
+      const getQualityScore = (str: string) => {
+        if (str.includes('2160p') || str.includes('4k') || str.includes('uhd')) return 4;
+        if (str.includes('1080p')) return 3;
+        if (str.includes('720p')) return 2;
+        if (str.includes('480p')) return 1;
+        return 0;
+      };
+
+      const qualA = getQualityScore(textA);
+      const qualB = getQualityScore(textB);
+
+      if (qualA !== qualB) return qualB - qualA; // Higher quality first
+
+      // Seeds Score (parsing "👤 123" or similar)
+      const getSeeds = (str: string) => {
+        const match = str.match(/👤\s*(\d+)/) || str.match(/seeders:\s*(\d+)/i);
+        return match ? parseInt(match[1]) : 0;
+      };
+
+      const seedsA = getSeeds(a.title || '');
+      const seedsB = getSeeds(b.title || '');
+
+      return seedsB - seedsA; // More seeds first
+    });
+  }, [streams]);
+
   if (loading) {
     return (
-      <div className="space-y-3 animate-pulse">
-        {[1, 2, 3].map(i => (
-          <div key={i} className="h-16 bg-white/5 rounded-lg w-full"></div>
+      <div className="space-y-2 animate-pulse">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="h-14 bg-white/5 rounded-md w-full"></div>
         ))}
       </div>
     );
@@ -23,13 +57,13 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
 
   if (streams.length === 0) {
     return (
-      <div className="py-12 flex flex-col items-center justify-center text-center">
-        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 text-gray-600">
-            <HardDrive className="w-8 h-8" />
+      <div className="py-12 flex flex-col items-center justify-center text-center bg-white/5 rounded-xl border border-white/5">
+        <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4 text-gray-500">
+            <HardDrive className="w-6 h-6" />
         </div>
-        <h3 className="text-lg font-medium text-gray-300">No streams available</h3>
-        <p className="text-sm text-gray-500 max-w-xs mt-2">
-            This content might not have any active torrents found by the addons.
+        <h3 className="text-base font-medium text-gray-300">No streams found</h3>
+        <p className="text-xs text-gray-500 max-w-xs mt-2">
+            Try checking your internet connection or selecting a different title.
         </p>
       </div>
     );
@@ -46,7 +80,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  const handleOpen = (stream: Stream) => {
+  const handleDownload = (stream: Stream) => {
     if (stream.url) {
       window.open(stream.url, '_blank');
     } else if (stream.infoHash) {
@@ -56,79 +90,79 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
   };
 
   return (
-    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-      {streams.map((stream, idx) => {
+    <div className="space-y-1 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+      {sortedStreams.map((stream, idx) => {
         const titleLines = (stream.title || '').split('\n');
         const nameLines = (stream.name || '').split('\n');
         
-        const quality = titleLines[0] || 'Unknown';
-        const size = nameLines[1] || '';
-        const source = nameLines[0] || 'P2P';
+        // Parsing Metadata
+        const fullText = (stream.title || '') + ' ' + (stream.name || '');
+        const qualityMatch = fullText.match(/(2160p|4k|1080p|720p|480p)/i);
+        const quality = qualityMatch ? qualityMatch[0].toUpperCase() : 'UNK';
         
-        const is4k = quality.toLowerCase().includes('4k') || quality.includes('2160p');
-        const is1080 = quality.includes('1080p');
-        const is720 = quality.includes('720p');
-        
-        const badgeClass = is4k ? 'bg-yellow-500 text-black border-yellow-600' 
-                        : is1080 ? 'bg-purple-500 text-white border-purple-600' 
-                        : is720 ? 'bg-blue-600 text-white border-blue-700'
-                        : 'bg-gray-700 text-gray-300 border-gray-600';
+        const sizeMatch = fullText.match(/(\d+(\.\d+)?\s?(GB|MB))/i);
+        const size = sizeMatch ? sizeMatch[0] : '';
 
+        const seedsMatch = fullText.match(/👤\s*(\d+)/);
+        const seeds = seedsMatch ? seedsMatch[1] : null;
+        
+        const source = nameLines[0] || 'P2P';
         const isDirect = !!stream.url;
 
         return (
           <div 
             key={idx}
-            className="group relative w-full flex items-center justify-between bg-[#111] hover:bg-[#161616] p-3 rounded-lg border border-white/5 hover:border-white/10 transition-all"
+            className="group flex items-center justify-between bg-[#0a0a0a] hover:bg-[#161616] p-2.5 rounded-md border border-white/5 transition-colors"
           >
-            {/* Left Section: Icon & Info */}
-            <div className="flex items-center gap-4 overflow-hidden flex-1 mr-4">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-inner ${isDirect ? 'bg-blue-900/20 text-blue-400' : 'bg-emerald-900/20 text-emerald-400'}`}>
-                {isDirect ? <Play className="w-5 h-5 ml-0.5" /> : <Magnet className="w-5 h-5" />}
+            {/* Left: Icon & Details */}
+            <div className="flex items-center gap-3 overflow-hidden flex-1 mr-2">
+              <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${isDirect ? 'text-blue-400 bg-blue-900/10' : 'text-gray-400 bg-white/5'}`}>
+                {isDirect ? <Play className="w-4 h-4" /> : <Magnet className="w-4 h-4" />}
               </div>
               
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                   <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-black tracking-tight border ${badgeClass}`}>
-                       {quality.replace('4k', '4K').replace('p', 'P')}
-                   </span>
-                   <span className="text-gray-400 text-xs truncate font-medium">{source}</span>
-                   {size && <span className="text-gray-600 text-[10px] px-1.5 py-0.5 bg-gray-800 rounded border border-gray-700">{size}</span>}
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                <div className="flex items-center gap-2 text-sm text-gray-200 font-medium leading-tight">
+                   <span>{quality}</span>
+                   {size && <span className="text-xs text-gray-500 font-normal">• {size}</span>}
+                   {seeds && (
+                     <span className="text-xs text-emerald-500 font-normal flex items-center gap-0.5">
+                       <Users className="w-3 h-3" /> {seeds}
+                     </span>
+                   )}
                 </div>
-                <div className="text-xs text-gray-500 font-mono truncate opacity-70 group-hover:opacity-100 transition-opacity">
-                   {titleLines.slice(1).join(' ')}
+                <div className="text-[11px] text-gray-500 font-mono truncate">
+                   {source} • {titleLines.slice(0, 1).join(' ')}
                 </div>
               </div>
             </div>
             
-            {/* Right Section: Actions */}
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Right: Actions */}
+            <div className="flex items-center gap-1.5 shrink-0">
                 {!isDirect && (
                   <button
                     onClick={() => onPlay(stream)}
-                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-md transition-all shadow-lg shadow-emerald-900/20 font-bold text-xs tracking-wide"
-                    title="Stream in Browser"
+                    className="flex items-center gap-1.5 bg-white text-black hover:bg-gray-200 px-3 py-1.5 rounded text-xs font-bold transition-colors"
                   >
                     <PlayCircle className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">PLAY</span>
+                    <span className="hidden sm:inline">Play</span>
                   </button>
                 )}
 
-                <div className="flex bg-black/20 rounded-md p-0.5 border border-white/5">
+                <div className="flex items-center gap-1">
                     <button 
                         onClick={() => handleCopy(stream, idx)}
-                        className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors relative"
-                        title="Copy Link"
-                    >
-                        {copiedIndex === idx ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                    <div className="w-px bg-white/10 my-1"></div>
-                    <button 
-                        onClick={() => handleOpen(stream)}
                         className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors"
-                        title={isDirect ? "Open URL" : "Open in External App"}
+                        title="Copy Magnet Link"
                     >
-                        <ExternalLink className="w-4 h-4" />
+                        {copiedIndex === idx ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                    
+                    <button 
+                        onClick={() => handleDownload(stream)}
+                        className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors"
+                        title="Download Torrent"
+                    >
+                        <Download className="w-4 h-4" />
                     </button>
                 </div>
             </div>
