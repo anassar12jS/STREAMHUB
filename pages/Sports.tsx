@@ -61,10 +61,29 @@ export const Sports: React.FC = () => {
     });
   }, [matches, activeCategory]);
 
-  // Extract Categories
+  // Extract & Prioritize Categories
   const categories = useMemo(() => {
-    const cats = new Set(matches.map(m => m.category.toUpperCase()));
-    return ['ALL', ...Array.from(cats)];
+    const cats = Array.from(new Set(matches.map(m => m.category.toUpperCase()))) as string[];
+    const priority = ['FOOTBALL', 'FIGHT', 'MOTORSPORT', 'BASKETBALL', 'TENNIS', 'BASEBALL'];
+
+    cats.sort((a, b) => {
+        const idxA = priority.indexOf(a);
+        const idxB = priority.indexOf(b);
+        
+        // Both in priority list -> sort by order in priority list
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        
+        // Only A is in priority -> A comes first
+        if (idxA !== -1) return -1;
+        
+        // Only B is in priority -> B comes first
+        if (idxB !== -1) return 1;
+        
+        // Neither in priority -> sort alphabetically
+        return a.localeCompare(b);
+    });
+
+    return ['ALL', ...cats];
   }, [matches]);
 
   const handlePlay = async (source: SportsMatchSource, title: string) => {
@@ -366,3 +385,4 @@ export const Sports: React.FC = () => {
     </div>
   );
 };
+    
