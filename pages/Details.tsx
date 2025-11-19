@@ -4,7 +4,7 @@ import { getDetails, getVideos } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
 import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
-import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download } from 'lucide-react';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -373,9 +373,13 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack }) => {
                             </p>
                         )}
                         {server === 'direct' && !videoError && (
-                            <p className="text-xs text-center text-gray-500 mt-3 font-mono">
-                                Playing directly from source. If no sound or video, file type may be unsupported.
-                            </p>
+                             <div className="mt-3 flex items-start justify-center gap-2 text-xs text-gray-400 bg-white/5 p-3 rounded border border-white/5">
+                                <Info className="w-4 h-4 shrink-0 text-blue-400" />
+                                <p>
+                                    <span className="text-gray-200 font-bold">Seeing a green "Downloading" screen?</span> This means the file is not yet cached on the Debrid server. 
+                                    Please try a stream marked <span className="text-blue-400 font-bold">⚡ CACHED</span> or wait for the download to finish.
+                                </p>
+                             </div>
                         )}
                     </div>
                 )}

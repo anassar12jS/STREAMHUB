@@ -17,6 +17,10 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
       const getText = (s: Stream) => (s.title || '') + (s.name || '');
       const textA = getText(a).toLowerCase();
       const textB = getText(b).toLowerCase();
+      
+      // Check for Debrid Cached status (standard convention is '+' symbol, e.g. [RD+], [TB+])
+      const isCachedA = (a.title || '').includes('+') || (a.name || '').includes('+');
+      const isCachedB = (b.title || '').includes('+') || (b.name || '').includes('+');
 
       // Quality Score
       const getQualityScore = (str: string) => {
@@ -30,12 +34,16 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
       const qualA = getQualityScore(textA);
       const qualB = getQualityScore(textB);
 
-      // Sort Direct (Debrid) links first
+      // 1. Sort by Cached status (Direct + Cached is best)
+      if (isCachedA !== isCachedB) return isCachedA ? -1 : 1;
+
+      // 2. Sort by Direct link presence (Direct is better than P2P)
       if (!!a.url !== !!b.url) return !!a.url ? -1 : 1;
 
+      // 3. Sort by Quality
       if (qualA !== qualB) return qualB - qualA; // Higher quality first
 
-      // Seeds Score (parsing "👤 123" or similar)
+      // 4. Seeds Score (parsing "👤 123" or similar)
       const getSeeds = (str: string) => {
         const match = str.match(/👤\s*(\d+)/) || str.match(/seeders:\s*(\d+)/i);
         return match ? parseInt(match[1]) : 0;
@@ -111,6 +119,8 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
         
         const source = nameLines[0] || 'P2P';
         const isDirect = !!stream.url;
+        // Detect Cached status based on '+' symbol convention in Debrid addons (e.g., [RD+], [TB+])
+        const isCached = isDirect && ((stream.title || '').includes('+') || (stream.name || '').includes('+'));
 
         return (
           <div 
@@ -119,14 +129,15 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
           >
             {/* Left: Icon & Details */}
             <div className="flex items-center gap-3 overflow-hidden flex-1 mr-2">
-              <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${isDirect ? 'text-blue-400 bg-blue-900/10' : 'text-gray-400 bg-white/5'}`}>
-                {isDirect ? <Zap className="w-4 h-4 fill-blue-400" /> : <Magnet className="w-4 h-4" />}
+              <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${isCached ? 'text-blue-400 bg-blue-900/10' : isDirect ? 'text-orange-400 bg-orange-900/10' : 'text-gray-400 bg-white/5'}`}>
+                {isCached ? <Zap className="w-4 h-4 fill-blue-400" /> : isDirect ? <Download className="w-4 h-4" /> : <Magnet className="w-4 h-4" />}
               </div>
               
               <div className="min-w-0 flex-1 flex flex-col justify-center">
                 <div className="flex items-center gap-2 text-sm text-gray-200 font-medium leading-tight">
                    <span>{quality}</span>
-                   {isDirect && <span className="text-[10px] bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20">CACHED</span>}
+                   {isCached && <span className="text-[10px] bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 font-bold">⚡ CACHED</span>}
+                   {isDirect && !isCached && <span className="text-[10px] bg-orange-900/30 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/20 font-bold">☁️ DOWNLOAD</span>}
                    {size && <span className="text-xs text-gray-500 font-normal">• {size}</span>}
                    {!isDirect && seeds && (
                      <span className="text-xs text-emerald-500 font-normal flex items-center gap-0.5">
@@ -144,7 +155,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
             <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => onPlay(stream)}
-                  className={`flex items-center gap-1.5 ${isDirect ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-white hover:bg-gray-200 text-black'} px-3 py-1.5 rounded text-xs font-bold transition-colors`}
+                  className={`flex items-center gap-1.5 ${isCached ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-white hover:bg-gray-200 text-black'} px-3 py-1.5 rounded text-xs font-bold transition-colors`}
                 >
                   <PlayCircle className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Play</span>
@@ -154,7 +165,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
                     <button 
                         onClick={() => handleCopy(stream, idx)}
                         className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors"
-                        title="Copy Magnet Link"
+                        title="Copy Link"
                     >
                         {copiedIndex === idx ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                     </button>
@@ -162,7 +173,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
                     <button 
                         onClick={() => handleDownload(stream)}
                         className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors"
-                        title="Download Torrent"
+                        title="Download"
                     >
                         <Download className="w-4 h-4" />
                     </button>
