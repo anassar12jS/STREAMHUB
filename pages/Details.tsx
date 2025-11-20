@@ -1,14 +1,14 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { TMDBResult, TMDBDetail, MediaType, Stream, TMDBVideo } from '../types';
-import { getDetails, getVideos, getRecommendations } from '../services/tmdb';
+import { TMDBResult, TMDBDetail, MediaType, Stream, TMDBVideo, Collection } from '../types';
+import { getDetails, getVideos, getRecommendations, getCollection } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
 import { isInWatchlist, addToWatchlist, removeFromWatchlist, addToHistory } from '../services/storage';
 import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
 import { MediaCard } from '../components/MediaCard';
 import { Footer } from '../components/Footer';
-import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions, ChevronUp, ChevronDown, Layers } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -23,6 +23,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
   const [trailer, setTrailer] = useState<TMDBVideo | null>(null);
   const [recommendations, setRecommendations] = useState<TMDBResult[]>([]);
+  const [collection, setCollection] = useState<Collection | null>(null);
   const [streams, setStreams] = useState<Stream[]>([]);
   const [loadingStreams, setLoadingStreams] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
@@ -52,6 +53,16 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
 
         const recs = await getRecommendations(item.id, item.media_type);
         setRecommendations(recs.slice(0, 10));
+
+        // Fetch Collection if exists
+        if (d.belongs_to_collection) {
+            const colData = await getCollection(d.belongs_to_collection.id);
+            // Sort parts by release date
+            colData.parts.sort((a, b) => new Date(a.release_date).getTime() - new Date(b.release_date).getTime());
+            setCollection(colData);
+        } else {
+            setCollection(null);
+        }
 
         if (item.media_type === MediaType.MOVIE && d.external_ids?.imdb_id) {
           setLoadingStreams(true);
@@ -398,6 +409,29 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                 </div>
             </div>
         </div>
+        
+        {/* Collection / Franchise View */}
+        {collection && collection.parts.length > 0 && (
+             <div className="mt-12 border-t border-[var(--border-color)] pt-10">
+                <div className="flex items-center gap-3 mb-6">
+                    <Layers className="w-6 h-6 text-[rgb(var(--primary-color))]" />
+                    <div>
+                        <h2 className="text-xl font-bold text-[var(--text-main)]">{collection.name}</h2>
+                        <p className="text-xs text-[var(--text-muted)]">Part of a franchise</p>
+                    </div>
+                </div>
+                <div className="flex overflow-x-auto space-x-4 pb-4 custom-scrollbar">
+                    {collection.parts.map(part => (
+                        <MediaCard 
+                            key={part.id} 
+                            item={{...part, media_type: MediaType.MOVIE}} 
+                            onClick={handleRecClick} 
+                        />
+                    ))}
+                </div>
+             </div>
+        )}
+
         {recommendations.length > 0 && (
            <div className="mt-12 border-t border-[var(--border-color)] pt-10">
                <h2 className="text-xl font-bold text-[var(--text-main)] mb-6 flex items-center gap-2"><Sparkles className="w-5 h-5 text-[rgb(var(--primary-color))]" /> You Might Also Like</h2>

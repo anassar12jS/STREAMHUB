@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Film, Menu, X, Settings, Bookmark, Trophy, Compass, Sun, Moon, Ghost } from 'lucide-react';
+import { Search, Film, Menu, X, Settings, Bookmark, Trophy, Compass, Sun, Moon, Ghost, Tv2 } from 'lucide-react';
 
 interface NavbarProps {
   onSearch: (query: string) => void;
@@ -43,11 +43,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate, onOpenSett
               <button onClick={() => onNavigate('anime')} className="hover:bg-[var(--bg-hover)] px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2">
                 <Ghost className="w-4 h-4 text-pink-500" /> Anime
               </button>
+              <button onClick={() => onNavigate('livetv')} className="hover:bg-[var(--bg-hover)] px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2">
+                <Tv2 className="w-4 h-4 text-green-500" /> Live TV
+              </button>
               <button onClick={() => onNavigate('library')} className="hover:bg-[var(--bg-hover)] px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2">
                 <Bookmark className="w-4 h-4" /> Library
               </button>
               <button onClick={() => onNavigate('sports')} className="hover:bg-[var(--bg-hover)] px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-yellow-500" /> Live Sports
+                <Trophy className="w-4 h-4 text-yellow-500" /> Sports
               </button>
             </div>
           </div>
@@ -116,6 +119,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch, onNavigate, onOpenSett
               <button onClick={() => { onNavigate('home'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--bg-hover)]">Home</button>
               <button onClick={() => { onNavigate('discover'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--bg-hover)]">Discover</button>
               <button onClick={() => { onNavigate('anime'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--bg-hover)] text-pink-500">Anime</button>
+              <button onClick={() => { onNavigate('livetv'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--bg-hover)] text-green-500">Live TV</button>
               <button onClick={() => { onNavigate('library'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--bg-hover)]">My Library</button>
               <button onClick={() => { onNavigate('sports'); setIsMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-[var(--bg-hover)] text-yellow-500">Live Sports</button>
             </div>

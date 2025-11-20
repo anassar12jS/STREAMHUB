@@ -16,6 +16,32 @@ export interface TMDBResult {
   vote_average: number;
   release_date?: string;
   first_air_date?: string; // For TV
+  belongs_to_collection?: {
+    id: number;
+    name: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+  };
+}
+
+export interface CollectionPart {
+  id: number;
+  title: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  media_type: MediaType; // Manually added for compatibility
+  vote_average: number;
+  release_date: string;
+}
+
+export interface Collection {
+  id: number;
+  name: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  parts: CollectionPart[];
 }
 
 export interface CastMember {
@@ -125,6 +151,13 @@ export interface AniListResult {
     episode: number;
   };
   genres: string[];
+}
+
+export interface IPTVChannel {
+  name: string;
+  logo?: string;
+  group?: string;
+  url: string;
 }
 
 declare global {

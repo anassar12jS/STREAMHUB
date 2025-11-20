@@ -1,6 +1,6 @@
 
 import { TMDB_API_KEY, TMDB_BASE_URL } from '../constants';
-import { TMDBResult, TMDBDetail, TMDBVideo, MediaType, PersonDetail } from '../types';
+import { TMDBResult, TMDBDetail, TMDBVideo, MediaType, PersonDetail, Collection } from '../types';
 
 const fetchTMDB = async (endpoint: string, params: Record<string, string> = {}) => {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
@@ -48,6 +48,10 @@ export const getDetails = async (id: number, type: MediaType): Promise<TMDBDetai
   return { ...data, media_type: type };
 };
 
+export const getCollection = async (id: number): Promise<Collection> => {
+    return await fetchTMDB(`/collection/${id}`);
+};
+
 export const getVideos = async (id: number, type: MediaType): Promise<TMDBVideo[]> => {
   try {
     const data = await fetchTMDB(`/${type}/${id}/videos`);
@@ -90,13 +94,14 @@ export const discoverMedia = async (
   type: MediaType, 
   sortBy: string = 'popularity.desc', 
   genreId?: number, 
-  year?: number
+  year?: number,
+  page: number = 1
 ): Promise<TMDBResult[]> => {
   const params: Record<string, string> = {
     sort_by: sortBy,
     include_adult: 'false',
     include_video: 'false',
-    page: '1',
+    page: page.toString(),
   };
 
   // FIX: If sorting by rating, require a minimum vote count to filter out obscure titles

@@ -9,6 +9,7 @@ import { Sports } from './pages/Sports';
 import { Discover } from './pages/Discover';
 import { Person } from './pages/Person';
 import { Anime } from './pages/Anime';
+import { LiveTV } from './pages/LiveTV';
 import { DMCA, Privacy, Terms } from './pages/Legal';
 import { SettingsModal } from './components/SettingsModal';
 import { searchMedia, getDetails } from './services/tmdb';
@@ -16,7 +17,7 @@ import { getTheme, getMode, setMode as setStorageMode } from './services/storage
 import { TMDBResult, MediaType } from './types';
 import { MediaCard } from './components/MediaCard';
 
-type ViewState = 'home' | 'details' | 'search' | 'library' | 'sports' | 'discover' | 'person' | 'anime' | 'dmca' | 'privacy' | 'terms';
+type ViewState = 'home' | 'details' | 'search' | 'library' | 'sports' | 'discover' | 'person' | 'anime' | 'livetv' | 'dmca' | 'privacy' | 'terms';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('home');
@@ -38,7 +39,6 @@ const App: React.FC = () => {
   // Apply Theme Color from Settings
   useEffect(() => {
     const theme = getTheme();
-    // Mode is already handled by the state initializer, but we sync theme color here
     const colorMap: Record<string, string> = {
         'purple': '147, 51, 234',
         'red': '220, 38, 38',
@@ -88,6 +88,8 @@ const App: React.FC = () => {
         setView('discover');
       } else if (hash === '#anime') {
         setView('anime');
+      } else if (hash === '#livetv') {
+        setView('livetv');
       } else if (hash === '#dmca') {
         setView('dmca');
       } else if (hash === '#privacy') {
@@ -117,6 +119,7 @@ const App: React.FC = () => {
         else if (hash === '#sports') setView('sports');
         else if (hash === '#discover') setView('discover');
         else if (hash === '#anime') setView('anime');
+        else if (hash === '#livetv') setView('livetv');
         else if (hash === '#dmca') setView('dmca');
         else if (hash === '#privacy') setView('privacy');
         else if (hash === '#terms') setView('terms');
@@ -178,6 +181,7 @@ const App: React.FC = () => {
         {view === 'sports' && <Sports />}
         {view === 'discover' && <Discover onSelect={handleSelect} />}
         {view === 'anime' && <Anime onSelect={handleSelect} />}
+        {view === 'livetv' && <LiveTV />}
         {view === 'person' && selectedPersonId && <Person id={selectedPersonId} onSelect={handleSelect} onBack={handleBack} />}
         {view === 'dmca' && <DMCA />}
         {view === 'privacy' && <Privacy />}
