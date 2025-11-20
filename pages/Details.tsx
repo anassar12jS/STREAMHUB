@@ -7,17 +7,19 @@ import { isInWatchlist, addToWatchlist, removeFromWatchlist, addToHistory } from
 import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
 import { MediaCard } from '../components/MediaCard';
+import { Footer } from '../components/Footer';
 import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
   onBack: () => void;
   onPersonClick?: (id: number) => void;
+  onNavigate: (view: string) => void;
 }
 
 type ServerType = 'cinemaos' | 'vidlink' | 'vidsrc-pro' | 'vidsrc' | 'direct' | 'webtor';
 
-export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick }) => {
+export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, onNavigate }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
   const [trailer, setTrailer] = useState<TMDBVideo | null>(null);
   const [recommendations, setRecommendations] = useState<TMDBResult[]>([]);
@@ -199,7 +201,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
   const posterUrl = detail.poster_path ? `${TMDB_POSTER_BASE}${detail.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster';
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] pb-10 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-sans transition-colors duration-300 flex flex-col">
       <div className="fixed inset-0 z-0">
         {backdropUrl && (
             <>
@@ -209,7 +211,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
         )}
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
         <div className="mb-6">
             <button onClick={onBack} className="flex items-center text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
             <ArrowLeft className="w-5 h-5 mr-2" /> <span className="font-medium">Back</span>
@@ -403,6 +405,9 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
            </div>
         )}
       </div>
+      
+      {/* Footer included directly in Details to ensure z-index layering and clickability */}
+      <Footer onNavigate={onNavigate} />
     </div>
   );
 };

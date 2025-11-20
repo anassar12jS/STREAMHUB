@@ -183,8 +183,9 @@ const App: React.FC = () => {
         {view === 'privacy' && <Privacy />}
         {view === 'terms' && <Terms />}
         
+        {/* Pass handleNavigate to Details so it can render the Footer internally */}
         {view === 'details' && selectedItem && (
-          <Details item={selectedItem} onBack={handleBack} onPersonClick={handlePersonSelect} />
+          <Details item={selectedItem} onBack={handleBack} onPersonClick={handlePersonSelect} onNavigate={handleNavigate} />
         )}
 
         {view === 'search' && (
@@ -204,7 +205,9 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <Footer onNavigate={handleNavigate} />
+      {/* Hide global footer on details view, as it is rendered inside Details component */}
+      {view !== 'details' && <Footer onNavigate={handleNavigate} />}
+      
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
