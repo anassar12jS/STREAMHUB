@@ -38,6 +38,8 @@
         --text-muted: #9ca3af; /* gray-400 */
         --border-color: rgba(255, 255, 255, 0.1);
         --shadow-color: rgba(0, 0, 0, 0.5);
+        --skeleton-start: #222222;
+        --skeleton-end: #333333;
       }
 
       :root[data-theme="light"] {
@@ -50,6 +52,8 @@
         --text-muted: #4b5563; /* gray-600 */
         --border-color: rgba(0, 0, 0, 0.1);
         --shadow-color: rgba(0, 0, 0, 0.1);
+        --skeleton-start: #e5e7eb;
+        --skeleton-end: #f3f4f6;
       }
 
       body {
@@ -117,6 +121,22 @@
       }
       .animate-fade-in {
         animation: fadeIn 0.5s ease-in-out forwards;
+      }
+
+      /* Shimmer Loading Animation */
+      @keyframes shimmer {
+        0% {
+          background-position: -1000px 0;
+        }
+        100% {
+          background-position: 1000px 0;
+        }
+      }
+
+      .skeleton-loader {
+        animation: shimmer 2s infinite linear;
+        background: linear-gradient(to right, var(--skeleton-start) 4%, var(--skeleton-end) 25%, var(--skeleton-start) 36%);
+        background-size: 1000px 100%;
       }
 
       .delay-100 { animation-delay: 100ms; }

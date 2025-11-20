@@ -61,7 +61,7 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
         </div>
       </div>
       
-      <div className="flex overflow-x-auto space-x-6 px-4 pb-8 custom-scrollbar scroll-smooth snap-x snap-mandatory pt-2">
+      <div className="flex overflow-x-auto space-x-6 px-4 pb-8 custom-scrollbar scroll-smooth snap-x snap-proximity pt-2">
         {items.slice(0, 10).map((item, index) => (
           <div 
             key={item.id} 
@@ -114,7 +114,7 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
         <h2 className="text-xl md:text-2xl font-bold text-[var(--text-main)] tracking-wide">{title}</h2>
       </div>
       
-      <div className="flex overflow-x-auto space-x-4 px-4 pb-4 custom-scrollbar scroll-smooth snap-x snap-mandatory">
+      <div className="flex overflow-x-auto space-x-4 px-4 pb-4 custom-scrollbar scroll-smooth snap-x snap-proximity">
         {items.map(item => (
           <div key={item.id} className="snap-start">
              <MediaCard item={item} onClick={onSelect} />

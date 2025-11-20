@@ -95,7 +95,7 @@ export const Discover: React.FC<DiscoverProps> = ({ onSelect }) => {
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {[...Array(10)].map((_, i) => (
-                <div key={i} className="aspect-[2/3] bg-[var(--bg-card)] rounded-lg animate-pulse"></div>
+                <div key={i} className="aspect-[2/3] skeleton-loader rounded-lg"></div>
             ))}
         </div>
       ) : items.length === 0 ? (

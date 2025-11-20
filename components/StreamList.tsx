@@ -59,9 +59,9 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
 
   if (loading) {
     return (
-      <div className="space-y-2 animate-pulse">
-        {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="h-14 bg-[var(--bg-card)] rounded-md w-full opacity-50"></div>
+      <div className="space-y-3">
+        {[1, 2, 3, 4, 5, 6].map(i => (
+          <div key={i} className="h-14 skeleton-loader rounded-md w-full"></div>
         ))}
       </div>
     );
