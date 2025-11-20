@@ -406,8 +406,10 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         )}
       </div>
       
-      {/* Footer included directly in Details to ensure z-index layering and clickability */}
-      <Footer onNavigate={onNavigate} />
+      {/* Footer wrapped in relative z-10 to stack above the fixed background */}
+      <div className="relative z-10 w-full">
+        <Footer onNavigate={onNavigate} />
+      </div>
     </div>
   );
 };
