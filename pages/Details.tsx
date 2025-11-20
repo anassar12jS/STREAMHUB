@@ -7,7 +7,7 @@ import { isInWatchlist, addToWatchlist, removeFromWatchlist, addToHistory } from
 import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
 import { MediaCard } from '../components/MediaCard';
-import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions } from 'lucide-react';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -26,8 +26,8 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [inLibrary, setInLibrary] = useState(false);
+  const [streamsExpanded, setStreamsExpanded] = useState(true);
   
-  // Player State
   const [showPlayer, setShowPlayer] = useState(false);
   const [server, setServer] = useState<ServerType>('cinemaos');
   const [currentMagnet, setCurrentMagnet] = useState<string>('');
@@ -36,25 +36,21 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch Details
   useEffect(() => {
     const fetchInfo = async () => {
       try {
         const d = await getDetails(item.id, item.media_type);
         setDetail(d);
         setInLibrary(isInWatchlist(item.id));
-        addToHistory(item); // Add to History automatically
+        addToHistory(item);
         
-        // Fetch Videos
         const videos = await getVideos(item.id, item.media_type);
         const officialTrailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.find(v => v.site === 'YouTube');
         if (officialTrailer) setTrailer(officialTrailer);
 
-        // Fetch Recommendations
         const recs = await getRecommendations(item.id, item.media_type);
         setRecommendations(recs.slice(0, 10));
 
-        // Fetch Streams if Movie
         if (item.media_type === MediaType.MOVIE && d.external_ids?.imdb_id) {
           setLoadingStreams(true);
           const s = await getStreams(MediaType.MOVIE, d.external_ids.imdb_id);
@@ -69,7 +65,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
     window.scrollTo(0,0);
   }, [item]);
 
-  // Fetch Streams if TV (Episode change)
   useEffect(() => {
     if (item.media_type === MediaType.TV && detail?.external_ids?.imdb_id) {
       const fetchEp = async () => {
@@ -82,7 +77,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
     }
   }, [selectedSeason, selectedEpisode, detail]);
 
-  // Load Webtor SDK
   useEffect(() => {
     if (document.getElementById('webtor-sdk')) {
       setSdkLoaded(true);
@@ -96,7 +90,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
     document.body.appendChild(script);
   }, []);
 
-  // Init Webtor
   useEffect(() => {
     if (showPlayer && server === 'webtor' && currentMagnet && detail && sdkLoaded && window.webtor) {
         const container = document.getElementById('webtor-player');
@@ -211,7 +204,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
         {backdropUrl && (
             <>
                 <img src={backdropUrl} alt="bg" className="w-full h-full object-cover opacity-20 blur-lg scale-105" />
-                {/* Update gradients to use CSS variables for seamless mode blending */}
                 <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-main)]/80 via-[var(--bg-main)]/95 to-[var(--bg-main)]" />
             </>
         )}
@@ -283,7 +275,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
                     <p className="text-[var(--text-muted)] leading-relaxed">{detail.overview}</p>
                 </div>
 
-                {/* Cast Section */}
                 {detail.credits && detail.credits.cast.length > 0 && (
                     <div className="mb-10">
                         <h3 className="text-[var(--text-main)] font-bold text-lg mb-4">Cast</h3>
@@ -379,16 +370,29 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick })
                 )}
 
                 <div>
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2"><Film className="w-5 h-5 text-[var(--text-muted)]" /> Torrent Streams</h2>
-                        {loadingStreams && <span className="text-xs text-[var(--text-muted)] animate-pulse uppercase font-bold tracking-wider">Searching...</span>}
+                    <div 
+                        className="flex items-center justify-between mb-4 cursor-pointer select-none" 
+                        onClick={() => setStreamsExpanded(!streamsExpanded)}
+                    >
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
+                                <Film className="w-5 h-5 text-[var(--text-muted)]" /> Torrent Streams
+                            </h2>
+                            {loadingStreams && <span className="text-xs text-[var(--text-muted)] animate-pulse uppercase font-bold tracking-wider">Searching...</span>}
+                        </div>
+                        <div className="bg-[var(--bg-card)] p-1.5 rounded-full border border-[var(--border-color)] hover:bg-[var(--bg-hover)] transition-colors">
+                            {streamsExpanded ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
+                        </div>
                     </div>
-                    <div className="bg-[var(--bg-card)] rounded-lg border border-[var(--border-color)] overflow-hidden">
-                         {!loadingStreams && streams.length > 0 && (
-                            <div className="bg-[var(--bg-hover)] px-4 py-2 border-b border-[var(--border-color)] flex items-center gap-4 text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-wider"><span>Source</span><span className="flex-1">Filename</span><span>Size</span></div>
-                         )}
-                         <div className="p-2"><StreamList streams={streams} loading={loadingStreams} onPlay={handleStreamPlay} /></div>
-                    </div>
+                    
+                    {streamsExpanded && (
+                        <div className="bg-[var(--bg-card)] rounded-lg border border-[var(--border-color)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                             {!loadingStreams && streams.length > 0 && (
+                                <div className="bg-[var(--bg-hover)] px-4 py-2 border-b border-[var(--border-color)] flex items-center gap-4 text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-wider"><span>Source</span><span className="flex-1">Filename</span><span>Size</span></div>
+                             )}
+                             <div className="p-2"><StreamList streams={streams} loading={loadingStreams} onPlay={handleStreamPlay} /></div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

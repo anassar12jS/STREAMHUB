@@ -21,9 +21,7 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
   const [heroItem, setHeroItem] = useState<TMDBResult | null>(null);
 
   useEffect(() => {
-    // Load History immediately
     setHistory(getHistory());
-
     const loadData = async () => {
       try {
         const [t, m, s, tm, ts] = await Promise.all([
@@ -61,14 +59,13 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
         </div>
       </div>
       
-      <div className="flex overflow-x-auto space-x-6 px-4 pb-8 custom-scrollbar scroll-smooth snap-x snap-proximity pt-2">
+      <div className="flex overflow-x-auto overflow-y-hidden overscroll-x-contain space-x-6 px-4 pb-8 custom-scrollbar scroll-smooth snap-x snap-proximity pt-2">
         {items.slice(0, 10).map((item, index) => (
           <div 
             key={item.id} 
             className="snap-start relative min-w-[280px] md:min-w-[360px] aspect-[16/9] rounded-xl cursor-pointer group transition-all duration-300 hover:scale-105 hover:z-10"
             onClick={() => onSelect(item)}
           >
-             {/* Number Overlay - The "Cool Thing" */}
              <div className="absolute -left-4 -bottom-6 z-20 font-black text-[140px] leading-none text-[var(--bg-main)] select-none drop-shadow-2xl" 
                   style={{ WebkitTextStroke: '4px #444', textShadow: '4px 4px 0px #000' }}>
                 {index + 1}
@@ -78,7 +75,6 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
                 {index + 1}
              </div>
 
-             {/* Image Container */}
              <div className="w-full h-full rounded-xl overflow-hidden shadow-2xl relative border border-[var(--border-color)] bg-[var(--bg-card)] ml-6 group-hover:ml-8 transition-all duration-300">
                 <img 
                     src={`${TMDB_IMAGE_BASE}${item.backdrop_path}`} 
@@ -88,7 +84,6 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
                 
-                {/* Content */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 pl-16">
                     <h3 className="text-white font-black text-xl md:text-2xl leading-none drop-shadow-lg uppercase italic truncate">
                         {item.name || item.title}
@@ -114,7 +109,7 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
         <h2 className="text-xl md:text-2xl font-bold text-[var(--text-main)] tracking-wide">{title}</h2>
       </div>
       
-      <div className="flex overflow-x-auto space-x-4 px-4 pb-4 custom-scrollbar scroll-smooth snap-x snap-proximity">
+      <div className="flex overflow-x-auto overflow-y-hidden overscroll-x-contain space-x-4 px-4 pb-4 custom-scrollbar scroll-smooth snap-x snap-proximity">
         {items.map(item => (
           <div key={item.id} className="snap-start">
              <MediaCard item={item} onClick={onSelect} />
@@ -127,7 +122,6 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
 
   return (
     <div className="min-h-screen pb-20 bg-[var(--bg-main)] overflow-x-hidden transition-colors duration-300">
-      {/* Hero Section */}
       {heroItem && (
         <div className="relative h-[85vh] w-full mb-16 group">
           <div className="absolute inset-0">
@@ -136,8 +130,6 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
               alt={heroItem.title || heroItem.name} 
               className="w-full h-full object-cover transition-transform duration-[20s] group-hover:scale-105"
             />
-            {/* Gradient overlay needs to be handled carefully for light mode. 
-                We keep dark gradient for text readability on hero, but fade to var(--bg-main) at bottom. */}
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-main)] via-black/60 to-transparent"></div>
             <div className="absolute inset-0 bg-gradient-to-r from-[var(--bg-main)] via-black/40 to-transparent"></div>
           </div>
@@ -182,15 +174,10 @@ export const Home: React.FC<HomeProps> = ({ onSelect }) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="space-y-2">
-          {/* History Row - Only show if has items */}
           {history.length > 0 && (
              <Row title="Continue Watching" items={history} icon={Clock} />
           )}
-
-          {/* TOP 10 MOVIES SECTION */}
           {movies.length > 0 && <Top10Row title="TOP 10 Movies" items={movies} typeLabel="MOVIES" />}
-
-          {/* TOP 10 SHOWS SECTION */}
           {series.length > 0 && <Top10Row title="TOP 10 Shows" items={series} typeLabel="TV SHOWS" />}
           
           <div className="my-12 border-t border-[var(--border-color)]" />

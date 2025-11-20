@@ -3,7 +3,9 @@ import { TORRENTIO_BASE_URL } from '../constants';
 import { StreamResponse, MediaType } from '../types';
 
 const getBaseUrl = () => {
-    return localStorage.getItem('torrentio_url') || TORRENTIO_BASE_URL;
+    const stored = localStorage.getItem('torrentio_url');
+    // Robust check: ensure it's not null, not empty, and not just whitespace
+    return (stored && stored.trim().length > 0) ? stored : TORRENTIO_BASE_URL;
 };
 
 export const getStreams = async (type: MediaType, id: string): Promise<StreamResponse> => {
