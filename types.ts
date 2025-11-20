@@ -30,7 +30,7 @@ export interface CollectionPart {
   overview: string;
   poster_path: string | null;
   backdrop_path: string | null;
-  media_type: MediaType; // Manually added for compatibility
+  media_type: MediaType;
   vote_average: number;
   release_date: string;
 }

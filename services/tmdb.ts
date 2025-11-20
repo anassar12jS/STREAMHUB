@@ -81,7 +81,7 @@ export const getPersonCredits = async (id: number): Promise<TMDBResult[]> => {
   const data = await fetchTMDB(`/person/${id}/combined_credits`);
   return data.cast
     .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
-    .sort((a: any, b: any) => b.vote_count - a.vote_count); // Sort by most popular/votes
+    .sort((a: any, b: any) => b.vote_count - a.vote_count);
 };
 
 // Discover
@@ -104,7 +104,6 @@ export const discoverMedia = async (
     page: page.toString(),
   };
 
-  // FIX: If sorting by rating, require a minimum vote count to filter out obscure titles
   if (sortBy === 'vote_average.desc') {
     params['vote_count.gte'] = '1000';
   }

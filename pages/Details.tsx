@@ -57,7 +57,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         // Fetch Collection if exists
         if (d.belongs_to_collection) {
             const colData = await getCollection(d.belongs_to_collection.id);
-            // Sort parts by release date
             colData.parts.sort((a, b) => new Date(a.release_date).getTime() - new Date(b.release_date).getTime());
             setCollection(colData);
         } else {

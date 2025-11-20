@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { IPTVChannel } from '../types';
-import { Tv2, Play, Search, Plus, AlertCircle, Upload } from 'lucide-react';
+import { Tv2, Play, Search, Plus, AlertCircle, Upload, Globe, Layers } from 'lucide-react';
 import Hls from 'hls.js';
 
 export const LiveTV: React.FC = () => {
-  const [playlistUrl, setPlaylistUrl] = useState('https://iptv-org.github.io/iptv/index.m3u'); // Default public list
+  const [playlistUrl, setPlaylistUrl] = useState('https://iptv-org.github.io/iptv/index.m3u');
+  const [playlistSource, setPlaylistSource] = useState<'global' | 'country' | 'category'>('global');
   const [channels, setChannels] = useState<IPTVChannel[]>([]);
   const [filteredChannels, setFilteredChannels] = useState<IPTVChannel[]>([]);
   const [activeChannel, setActiveChannel] = useState<IPTVChannel | null>(null);
@@ -13,10 +14,20 @@ export const LiveTV: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load default list on mount
   useEffect(() => {
     fetchPlaylist(playlistUrl);
   }, []);
+
+  const handleSourceChange = (source: 'global' | 'country' | 'category') => {
+      setPlaylistSource(source);
+      let url = 'https://iptv-org.github.io/iptv/index.m3u';
+      if (source === 'country') url = 'https://iptv-org.github.io/iptv/index.country.m3u';
+      if (source === 'category') url = 'https://iptv-org.github.io/iptv/index.category.m3u';
+      setPlaylistUrl(url);
+      fetchPlaylist(url);
+      setActiveChannel(null);
+      setSearch('');
+  };
 
   const parseM3U = (content: string): IPTVChannel[] => {
     const lines = content.split('\n');
@@ -74,7 +85,10 @@ export const LiveTV: React.FC = () => {
     if (search.trim() === '') {
         setFilteredChannels(channels);
     } else {
-        setFilteredChannels(channels.filter(c => c.name.toLowerCase().includes(search.toLowerCase())));
+        setFilteredChannels(channels.filter(c => 
+            c.name.toLowerCase().includes(search.toLowerCase()) || 
+            (c.group && c.group.toLowerCase().includes(search.toLowerCase()))
+        ));
     }
   }, [search, channels]);
 
@@ -105,14 +119,37 @@ export const LiveTV: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 min-h-screen animate-fade-in flex flex-col h-screen">
-        <div className="flex justify-between items-center mb-6 shrink-0">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 shrink-0">
             <div className="flex items-center gap-3">
                 <Tv2 className="w-8 h-8 text-green-500" />
                 <h1 className="text-3xl font-bold text-[var(--text-main)]">Live TV</h1>
             </div>
-            <button onClick={handleImport} className="bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-[var(--text-main)] border border-[var(--border-color)] px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
-                <Upload className="w-4 h-4" /> Import M3U
-            </button>
+            
+            <div className="flex gap-2">
+                 <div className="flex bg-[var(--bg-card)] p-1 rounded-lg border border-[var(--border-color)]">
+                    <button 
+                        onClick={() => handleSourceChange('global')}
+                        className={`px-3 py-1.5 rounded text-xs font-bold flex items-center gap-2 transition-all ${playlistSource === 'global' ? 'bg-[rgb(var(--primary-color))] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <Globe className="w-3 h-3" /> All
+                    </button>
+                    <button 
+                        onClick={() => handleSourceChange('category')}
+                        className={`px-3 py-1.5 rounded text-xs font-bold flex items-center gap-2 transition-all ${playlistSource === 'category' ? 'bg-[rgb(var(--primary-color))] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <Layers className="w-3 h-3" /> Category
+                    </button>
+                    <button 
+                        onClick={() => handleSourceChange('country')}
+                        className={`px-3 py-1.5 rounded text-xs font-bold flex items-center gap-2 transition-all ${playlistSource === 'country' ? 'bg-[rgb(var(--primary-color))] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <Globe className="w-3 h-3" /> Country
+                    </button>
+                 </div>
+                 <button onClick={handleImport} className="bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-[var(--text-main)] border border-[var(--border-color)] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 h-full">
+                    <Upload className="w-3 h-3" /> Import
+                 </button>
+            </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 pb-6">
@@ -153,7 +190,10 @@ export const LiveTV: React.FC = () => {
                 
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {loading ? (
-                        <div className="p-8 text-center text-[var(--text-muted)]">Loading Playlist...</div>
+                        <div className="p-8 text-center text-[var(--text-muted)] flex flex-col items-center gap-2">
+                             <div className="w-6 h-6 border-2 border-[rgb(var(--primary-color))] border-t-transparent rounded-full animate-spin"></div>
+                             Loading Playlist...
+                        </div>
                     ) : error ? (
                         <div className="p-8 text-center text-red-500 flex flex-col items-center">
                             <AlertCircle className="w-8 h-8 mb-2" />
