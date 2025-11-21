@@ -161,7 +161,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         setServer('direct');
         setShowPlayer(true);
     } else if (stream.infoHash) {
-        const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
+const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
         window.location.href = magnet;
     }
   };
