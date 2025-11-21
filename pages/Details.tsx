@@ -136,8 +136,8 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         // VidSrc usually supports IMDB IDs best, but falls back to TMDB
         const vidsrcId = imdbId || tmdbId;
         return item.media_type === MediaType.MOVIE
-          ? `https://vidsrc.wtf/api/1/movie/?id=${vidsrcId}`
-          : `https://vidsrc.wtf/api/1/tv/?id=${vidsrcId}&s=${s}&e=${e}`;
+          ? `https://vidsrc.wtf/api/1/movie/?id=${tmdbId}`
+          : `https://vidsrc.wtf/api/1/tv/?id=${tmdbId}&s=${s}&e=${e}`;
       case 'vidsrc-cc':
          const vidsrcCcId = imdbId || tmdbId;
         return item.media_type === MediaType.MOVIE
