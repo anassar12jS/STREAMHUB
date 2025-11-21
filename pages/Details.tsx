@@ -8,7 +8,7 @@ import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
 import { MediaCard } from '../components/MediaCard';
 import { Footer } from '../components/Footer';
-import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions, ChevronUp, ChevronDown, Layers } from 'lucide-react';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions, ChevronUp, ChevronDown, Layers, Zap } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -17,7 +17,7 @@ interface DetailsProps {
   onNavigate: (view: string) => void;
 }
 
-type ServerType = 'vidsrc-wtf' | 'videasy' | 'vidora' | 'cinemaos' | 'vidlink' | 'vidsrc-pro' | 'vidsrc' | 'direct';
+type ServerType = 'vidsrc-wtf' | 'vidsrc-cc' | 'vidsrc-pro' | 'direct';
 
 export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, onNavigate }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
@@ -52,7 +52,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         const recs = await getRecommendations(item.id, item.media_type);
         setRecommendations(recs.slice(0, 10));
 
-        // Fetch Collection if exists
         if (d.belongs_to_collection) {
             const colData = await getCollection(d.belongs_to_collection.id);
             colData.parts.sort((a, b) => new Date(a.release_date).getTime() - new Date(b.release_date).getTime());
@@ -119,40 +118,22 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
   }
 
   const getEmbedUrl = () => {
-    const id = item.id;
+    const imdbId = detail.external_ids?.imdb_id || `tmdb:${item.id}`;
     const s = selectedSeason;
     const e = selectedEpisode;
 
     switch (server) {
       case 'vidsrc-wtf':
         return item.media_type === MediaType.MOVIE
-          ? `https://vidsrc.wtf/api/1/movie/?id=${id}`
-          : `https://vidsrc.wtf/api/1/tv/?id=${id}&s=${s}&e=${e}`;
-      case 'videasy':
-        return item.media_type === MediaType.MOVIE
-          ? `https://player.videasy.net/movie/${id}`
-          : `https://player.videasy.net/tv/${id}/${s}/${e}`;
-      case 'vidora':
-        return item.media_type === MediaType.MOVIE
-          ? `https://vidora.su/movie/${id}`
-          : `https://vidora.su/tv/${id}/${s}/${e}`;
-      case 'cinemaos':
-        return item.media_type === MediaType.MOVIE
-          ? `https://cinemaos.tech/player/${id}`
-          : `https://cinemaos.tech/player/${id}/${s}/${e}`;
-      case 'vidlink':
-        return item.media_type === MediaType.MOVIE 
-          ? `https://vidlink.pro/movie/${id}?primaryColor=a855f7` 
-          : `https://vidlink.pro/tv/${id}/${s}/${e}?primaryColor=a855f7`;
+          ? `https://vidsrc.wtf/embed/movie/${imdbId}`
+          : `https://vidsrc.wtf/embed/tv/${imdbId}/${s}/${e}`;
+      case 'vidsrc-cc':
+        return `https://vidsrc.cc/v2/embed/${imdbId}/${item.media_type === MediaType.TV ? `${s}-${e}` : ''}`;
       case 'vidsrc-pro':
-        return item.media_type === MediaType.MOVIE
-          ? `https://vidsrc.to/embed/movie/${id}`
-          : `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
-      case 'vidsrc':
       default:
-        return item.media_type === MediaType.MOVIE 
-          ? `https://vidsrc.xyz/embed/movie/${id}` 
-          : `https://vidsrc.xyz/embed/tv/${id}/${s}/${e}`;
+        return item.media_type === MediaType.MOVIE
+          ? `https://vidsrc.to/embed/movie/${imdbId}`
+          : `https://vidsrc.to/embed/tv/${imdbId}/${s}/${e}`;
     }
   };
 
@@ -163,7 +144,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         setServer('direct');
         setShowPlayer(true);
     } else if (stream.infoHash) {
-        // Fallback for magnets if user clicks row instead of download
         const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
         window.location.href = magnet;
     }
@@ -182,6 +162,12 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
 
   const backdropUrl = detail.backdrop_path ? `${TMDB_IMAGE_BASE}${detail.backdrop_path}` : '';
   const posterUrl = detail.poster_path ? `${TMDB_POSTER_BASE}${detail.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster';
+
+  const servers = [
+      { id: 'vidsrc-wtf', label: 'VidSrc WTF', icon: Zap, badge: 'Fastest' },
+      { id: 'vidsrc-cc', label: 'VidSrc CC', icon: PlayCircle, badge: 'New' },
+      { id: 'vidsrc-pro', label: 'VidSrc Pro', icon: Server, badge: 'Reliable' },
+  ];
 
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-sans transition-colors duration-300 flex flex-col">
@@ -287,44 +273,65 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
 
                 {showPlayer && (
                     <div ref={playerRef} className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
-                        <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-[var(--border-color)] relative group">
-                            <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10">
-                                        <Server className="w-4 h-4 text-[rgb(var(--primary-color))] ml-2" />
-                                        <select value={server} onChange={(e) => setServer(e.target.value as ServerType)} className="bg-transparent text-white text-xs font-bold py-1 pr-2 focus:outline-none cursor-pointer">
-                                            <option value="vidsrc-wtf" className="bg-black text-gray-200">VidSrc WTF (Fast)</option>
-                                            <option value="videasy" className="bg-black text-gray-200">Videasy</option>
-                                            <option value="vidora" className="bg-black text-gray-200">Vidora</option>
-                                            <option value="cinemaos" className="bg-black text-gray-200">CinemaOS</option>
-                                            <option value="vidlink" className="bg-black text-gray-200">VidLink</option>
-                                            <option value="vidsrc-pro" className="bg-black text-gray-200">VidSrc Pro</option>
-                                            <option value="vidsrc" className="bg-black text-gray-200">VidSrc Legacy</option>
-                                            <option value="direct" className="bg-black text-gray-200">Direct Play</option>
-                                        </select>
-                                    </div>
-                                    <button onClick={openSubtitles} className="flex items-center gap-1 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/10">
-                                        <Captions className="w-4 h-4" /> Subs
-                                    </button>
+                        <div className="flex flex-col gap-4 bg-[var(--bg-card)]/50 p-4 rounded-xl border border-[var(--border-color)] backdrop-blur-md">
+                            {/* Server Selector */}
+                            {server !== 'direct' && (
+                                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                    {servers.map((srv) => {
+                                        const Icon = srv.icon;
+                                        return (
+                                            <button
+                                                key={srv.id}
+                                                onClick={() => setServer(srv.id as ServerType)}
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold whitespace-nowrap transition-all ${
+                                                    server === srv.id 
+                                                        ? 'bg-[var(--text-main)] text-[var(--bg-main)] border-[var(--text-main)] transform scale-105 shadow-lg' 
+                                                        : 'bg-[var(--bg-card)]/50 text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--text-main)] hover:text-[var(--text-main)]'
+                                                }`}
+                                            >
+                                                <Icon className="w-3 h-3" />
+                                                {srv.label}
+                                                {srv.badge && (
+                                                    <span className={`px-1.5 py-0.5 rounded-full text-[8px] ml-1 ${
+                                                        server === srv.id 
+                                                            ? 'bg-[var(--bg-main)] text-[var(--text-main)]' 
+                                                            : 'bg-[rgb(var(--primary-color))] text-white'
+                                                    }`}>
+                                                        {srv.badge}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
-                                <button onClick={() => { setShowPlayer(false); setDirectUrl(''); }} className="bg-black/60 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md border border-white/10"><X className="w-4 h-4" /></button>
-                            </div>
-                            
-                            {server === 'direct' ? (
-                                <div className="w-full h-full bg-black flex items-center justify-center relative">
-                                     {!videoError ? (
-                                        <video controls autoPlay className="w-full h-full outline-none" src={directUrl} onError={() => setVideoError(true)}></video>
-                                     ) : (
-                                        <div className="text-center p-6">
-                                            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-                                            <p className="text-white font-bold mb-2">Playback Failed</p>
-                                            <a href={directUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-white text-black px-6 py-2 rounded font-bold hover:bg-gray-200 transition-colors"><Download className="w-4 h-4" /> Download</a>
-                                        </div>
-                                     )}
-                                </div>
-                            ) : (
-                                <iframe src={getEmbedUrl()} className="w-full h-full" frameBorder="0" allowFullScreen allow="autoplay; encrypted-media; picture-in-picture" referrerPolicy="origin"></iframe>
                             )}
+
+                            <div className="w-full aspect-video bg-black rounded-lg overflow-hidden shadow-2xl relative group">
+                                <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                    <div className="pointer-events-auto flex items-center gap-2">
+                                        <button onClick={openSubtitles} className="flex items-center gap-1 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/10 backdrop-blur-md transition-colors">
+                                            <Captions className="w-4 h-4" /> Subtitles
+                                        </button>
+                                    </div>
+                                    <button onClick={() => { setShowPlayer(false); setDirectUrl(''); }} className="pointer-events-auto bg-black/60 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md border border-white/10"><X className="w-4 h-4" /></button>
+                                </div>
+                                
+                                {server === 'direct' ? (
+                                    <div className="w-full h-full bg-black flex items-center justify-center relative">
+                                        {!videoError ? (
+                                            <video controls autoPlay className="w-full h-full outline-none" src={directUrl} onError={() => setVideoError(true)}></video>
+                                        ) : (
+                                            <div className="text-center p-6">
+                                                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                                                <p className="text-white font-bold mb-2">Playback Failed</p>
+                                                <a href={directUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-white text-black px-6 py-2 rounded font-bold hover:bg-gray-200 transition-colors"><Download className="w-4 h-4" /> Download</a>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <iframe src={getEmbedUrl()} className="w-full h-full" frameBorder="0" allowFullScreen allow="autoplay; encrypted-media; picture-in-picture" referrerPolicy="origin"></iframe>
+                                )}
+                            </div>
                         </div>
                         {server === 'direct' && !videoError && <div className="mt-3 flex items-start justify-center gap-2 text-xs text-[var(--text-muted)] bg-[var(--bg-card)] p-3 rounded border border-[var(--border-color)]"><Info className="w-4 h-4 shrink-0 text-blue-500" /><p><span className="text-[var(--text-main)] font-bold">Green Screen?</span> The file is downloading to the server. Try a <span className="text-blue-500 font-bold">⚡ CACHED</span> stream.</p></div>}
                     </div>
@@ -380,7 +387,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
             </div>
         </div>
         
-        {/* Collection / Franchise View */}
         {collection && collection.parts.length > 0 && (
              <div className="mt-12 border-t border-[var(--border-color)] pt-10">
                 <div className="flex items-center gap-3 mb-6">
@@ -410,7 +416,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         )}
       </div>
       
-      {/* Footer wrapped in relative z-10 to stack above the fixed background */}
       <div className="relative z-10 w-full">
         <Footer onNavigate={onNavigate} />
       </div>
