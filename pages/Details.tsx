@@ -34,6 +34,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
   const [server, setServer] = useState<ServerType>('vidsrc-wtf');
   const [directUrl, setDirectUrl] = useState<string>('');
   const [videoError, setVideoError] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(true);
   const playerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -130,8 +131,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
           ? `https://vidsrc.wtf/api/1/movie/?id=${vidsrcId}`
           : `https://vidsrc.wtf/api/1/tv/?id=${vidsrcId}&s=${s}&e=${e}`;
       case 'vidsrc-cc':
-         // Switch to TMDB ID as primary to reduce dependency on IMDB
-         const vidsrcCcId = `tmdb:${tmdbId}`;
+         const vidsrcCcId = imdbId || tmdbId;
         return item.media_type === MediaType.MOVIE
           ? `https://vidsrc.cc/v2/embed/movie/${vidsrcCcId}`
           : `https://vidsrc.cc/v2/embed/tv/${vidsrcCcId}/${s}/${e}`;
@@ -179,7 +179,13 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
 
   const handleDirectPlay = () => {
       setServer('vidsrc-wtf');
+      setIframeLoading(true);
       setShowPlayer(true);
+  };
+
+  const handleServerChange = (newServer: ServerType) => {
+      setServer(newServer);
+      setIframeLoading(true);
   };
 
   const openSubtitles = () => {
@@ -314,7 +320,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                                         return (
                                             <button
                                                 key={srv.id}
-                                                onClick={() => setServer(srv.id as ServerType)}
+                                                onClick={() => handleServerChange(srv.id as ServerType)}
                                                 className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold whitespace-nowrap transition-all ${
                                                     server === srv.id 
                                                         ? 'bg-[var(--text-main)] text-[var(--bg-main)] border-[var(--text-main)] transform scale-105 shadow-lg' 
@@ -361,7 +367,23 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                                         )}
                                     </div>
                                 ) : (
-                                    <iframe src={getEmbedUrl()} className="w-full h-full" frameBorder="0" allowFullScreen allow="autoplay; encrypted-media; picture-in-picture" referrerPolicy="origin"></iframe>
+                                    <div className="w-full h-full relative">
+                                        {iframeLoading && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--text-main)]"></div>
+                                            </div>
+                                        )}
+                                        <iframe 
+                                            key={server}
+                                            src={getEmbedUrl()} 
+                                            className="w-full h-full" 
+                                            frameBorder="0" 
+                                            allowFullScreen 
+                                            allow="autoplay; encrypted-media; picture-in-picture" 
+                                            referrerPolicy="origin"
+                                            onLoad={() => setIframeLoading(false)}
+                                        ></iframe>
+                                    </div>
                                 )}
                             </div>
                         </div>
