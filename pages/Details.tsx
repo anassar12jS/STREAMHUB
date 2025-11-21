@@ -17,7 +17,7 @@ interface DetailsProps {
   onNavigate: (view: string) => void;
 }
 
-type ServerType = 'vidsrc-wtf' | 'vidsrc-cc' | 'vidsrc-pro' | 'direct';
+type ServerType = 'vidsrc-wtf' | 'vidsrc-cc' | 'videasy' | 'vidora' | 'cinemaos' | 'vidlink' | 'vidfastpro' |;
 
 export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, onNavigate }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
@@ -125,15 +125,32 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
     switch (server) {
       case 'vidsrc-wtf':
         return item.media_type === MediaType.MOVIE
-          ? `https://vidsrc.wtf/embed/movie/${imdbId}`
-          : `https://vidsrc.wtf/embed/tv/${imdbId}/${s}/${e}`;
+          ? `https://vidsrc.wtf/api/1/movie/?id=${id}`
+          : `https://vidsrc.wtf/api/1/tv/?id=${id}&s=${s}&e=${e}`;
       case 'vidsrc-cc':
-        return `https://vidsrc.cc/v2/embed/${imdbId}/${item.media_type === MediaType.TV ? `${s}-${e}` : ''}`;
-      case 'vidsrc-pro':
-      default:
         return item.media_type === MediaType.MOVIE
-          ? `https://vidsrc.to/embed/movie/${imdbId}`
-          : `https://vidsrc.to/embed/tv/${imdbId}/${s}/${e}`;
+          ? `https://vidsrc.cc/v2/embed/movie/${imdbId}`
+          : `https://vidsrc.cc/v2/embed/tv/${imdbId}/${s}/${e}`;
+              case 'videasy':
+        return item.media_type === MediaType.MOVIE
+          ? `https://player.videasy.net/movie/${id}`
+          : `https://player.videasy.net/tv/${id}/${s}/${e}`;
+      case 'vidora':
+        return item.media_type === MediaType.MOVIE
+          ? `https://vidora.su/movie/${id}`
+          : `https://vidora.su/tv/${id}/${s}/${e}`;
+      case 'cinemaos':
+        return item.media_type === MediaType.MOVIE
+          ? `https://cinemaos.tech/player/${id}`
+          : `https://cinemaos.tech/player/${id}/${s}/${e}`;
+      case 'vidlink':
+        return item.media_type === MediaType.MOVIE 
+          ? `https://vidlink.pro/movie/${id}?primaryColor=a855f7` 
+          : `https://vidlink.pro/tv/${id}/${s}/${e}?primaryColor=a855f7`;
+      case 'vidfastpro':
+        return item.media_type === MediaType.MOVIE 
+          ? `https://vidfast.pro/movie/${id}`
+          : `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true
     }
   };
 
