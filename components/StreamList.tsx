@@ -154,13 +154,16 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
             
             {/* Right: Actions */}
             <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => onPlay(stream)}
-                  className={`flex items-center gap-1.5 ${isCached ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[var(--text-main)] hover:opacity-90 text-[var(--bg-main)]'} px-3 py-1.5 rounded text-xs font-bold transition-colors`}
-                >
-                  <PlayCircle className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Play</span>
-                </button>
+                {/* Only show Play button for DIRECT links. P2P magnets should be download-only to avoid slow Webtor experience */}
+                {isDirect && (
+                    <button
+                    onClick={() => onPlay(stream)}
+                    className={`flex items-center gap-1.5 ${isCached ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[var(--text-main)] hover:opacity-90 text-[var(--bg-main)]'} px-3 py-1.5 rounded text-xs font-bold transition-colors`}
+                    >
+                    <PlayCircle className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Play</span>
+                    </button>
+                )}
 
                 <div className="flex items-center gap-1">
                     <button 
@@ -173,7 +176,7 @@ export const StreamList: React.FC<StreamListProps> = ({ streams, loading, onPlay
                     
                     <button 
                         onClick={() => handleDownload(stream)}
-                        className="p-1.5 hover:bg-[var(--bg-hover)] rounded text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+                        className={`p-1.5 hover:bg-[var(--bg-hover)] rounded text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors ${!isDirect ? 'bg-[var(--bg-hover)] text-[var(--text-main)]' : ''}`}
                         title="Download"
                     >
                         <Download className="w-4 h-4" />

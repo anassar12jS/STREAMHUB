@@ -8,7 +8,7 @@ import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
 import { MediaCard } from '../components/MediaCard';
 import { Footer } from '../components/Footer';
-import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, Zap, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions, ChevronUp, ChevronDown, Layers } from 'lucide-react';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions, ChevronUp, ChevronDown, Layers } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -17,7 +17,7 @@ interface DetailsProps {
   onNavigate: (view: string) => void;
 }
 
-type ServerType = 'cinemaos' | 'vidlink' | 'vidsrc-pro' | 'vidsrc' | 'direct' | 'webtor';
+type ServerType = 'vidsrc-wtf' | 'videasy' | 'vidora' | 'cinemaos' | 'vidlink' | 'vidsrc-pro' | 'vidsrc' | 'direct';
 
 export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, onNavigate }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
@@ -32,11 +32,9 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
   const [streamsExpanded, setStreamsExpanded] = useState(true);
   
   const [showPlayer, setShowPlayer] = useState(false);
-  const [server, setServer] = useState<ServerType>('cinemaos');
-  const [currentMagnet, setCurrentMagnet] = useState<string>('');
+  const [server, setServer] = useState<ServerType>('vidsrc-wtf');
   const [directUrl, setDirectUrl] = useState<string>('');
   const [videoError, setVideoError] = useState(false);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -90,42 +88,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
   }, [selectedSeason, selectedEpisode, detail]);
 
   useEffect(() => {
-    if (document.getElementById('webtor-sdk')) {
-      setSdkLoaded(true);
-      return;
-    }
-    const script = document.createElement('script');
-    script.id = 'webtor-sdk';
-    script.src = 'https://cdn.jsdelivr.net/npm/@webtor/embed-sdk-js/dist/index.min.js';
-    script.async = true;
-    script.onload = () => setSdkLoaded(true);
-    document.body.appendChild(script);
-  }, []);
-
-  useEffect(() => {
-    if (showPlayer && server === 'webtor' && currentMagnet && detail && sdkLoaded && window.webtor) {
-        const container = document.getElementById('webtor-player');
-        if (container) container.innerHTML = '';
-
-        const timer = setTimeout(() => {
-            window.webtor.push({
-                id: 'webtor-player',
-                magnet: currentMagnet,
-                width: '100%',
-                height: '100%',
-                imdbId: detail.external_ids?.imdb_id,
-                poster: detail.backdrop_path ? `${TMDB_IMAGE_BASE}${detail.backdrop_path}` : undefined,
-                title: item.media_type === MediaType.TV 
-                    ? `${detail.title || detail.name} - S${selectedSeason}E${selectedEpisode}` 
-                    : (detail.title || detail.name),
-                theme: 'dark'
-            });
-        }, 100);
-        return () => clearTimeout(timer);
-    }
-  }, [showPlayer, server, currentMagnet, detail, selectedSeason, selectedEpisode, sdkLoaded]);
-
-  useEffect(() => {
     if (showPlayer && playerRef.current) {
       playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -162,6 +124,18 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
     const e = selectedEpisode;
 
     switch (server) {
+      case 'vidsrc-wtf':
+        return item.media_type === MediaType.MOVIE
+          ? `https://vidsrc.wtf/embed/movie/${id}`
+          : `https://vidsrc.wtf/embed/tv/${id}/${s}/${e}`;
+      case 'videasy':
+        return item.media_type === MediaType.MOVIE
+          ? `https://player.videasy.net/movie/${id}`
+          : `https://player.videasy.net/tv/${id}/${s}/${e}`;
+      case 'vidora':
+        return item.media_type === MediaType.MOVIE
+          ? `https://vidora.su/embed/movie/${id}`
+          : `https://vidora.su/embed/tv/${id}/${s}/${e}`;
       case 'cinemaos':
         return item.media_type === MediaType.MOVIE
           ? `https://cinemaos.tech/player/${id}`
@@ -189,15 +163,14 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         setServer('direct');
         setShowPlayer(true);
     } else if (stream.infoHash) {
+        // Fallback for magnets if user clicks row instead of download
         const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
-        setCurrentMagnet(magnet);
-        setServer('webtor');
-        setShowPlayer(true);
+        window.location.href = magnet;
     }
   };
 
   const handleDirectPlay = () => {
-      setServer('cinemaos');
+      setServer('vidsrc-wtf');
       setShowPlayer(true);
   };
 
@@ -320,19 +293,21 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                                     <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10">
                                         <Server className="w-4 h-4 text-[rgb(var(--primary-color))] ml-2" />
                                         <select value={server} onChange={(e) => setServer(e.target.value as ServerType)} className="bg-transparent text-white text-xs font-bold py-1 pr-2 focus:outline-none cursor-pointer">
-                                            <option value="cinemaos" className="bg-black text-gray-200">CinemaOS (Best)</option>
+                                            <option value="vidsrc-wtf" className="bg-black text-gray-200">VidSrc WTF (Fast)</option>
+                                            <option value="videasy" className="bg-black text-gray-200">Videasy</option>
+                                            <option value="vidora" className="bg-black text-gray-200">Vidora</option>
+                                            <option value="cinemaos" className="bg-black text-gray-200">CinemaOS</option>
                                             <option value="vidlink" className="bg-black text-gray-200">VidLink</option>
                                             <option value="vidsrc-pro" className="bg-black text-gray-200">VidSrc Pro</option>
                                             <option value="vidsrc" className="bg-black text-gray-200">VidSrc Legacy</option>
                                             <option value="direct" className="bg-black text-gray-200">Direct Play</option>
-                                            <option value="webtor" className="bg-black text-gray-200">P2P Torrent</option>
                                         </select>
                                     </div>
                                     <button onClick={openSubtitles} className="flex items-center gap-1 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/10">
                                         <Captions className="w-4 h-4" /> Subs
                                     </button>
                                 </div>
-                                <button onClick={() => { setShowPlayer(false); setCurrentMagnet(''); setDirectUrl(''); }} className="bg-black/60 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md border border-white/10"><X className="w-4 h-4" /></button>
+                                <button onClick={() => { setShowPlayer(false); setDirectUrl(''); }} className="bg-black/60 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md border border-white/10"><X className="w-4 h-4" /></button>
                             </div>
                             
                             {server === 'direct' ? (
@@ -346,10 +321,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                                             <a href={directUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-white text-black px-6 py-2 rounded font-bold hover:bg-gray-200 transition-colors"><Download className="w-4 h-4" /> Download</a>
                                         </div>
                                      )}
-                                </div>
-                            ) : server === 'webtor' ? (
-                                <div id="webtor-player" className="w-full h-full bg-black flex items-center justify-center relative">
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><div className="bg-black/80 p-4 rounded text-center"><Zap className="w-8 h-8 text-yellow-500 mx-auto mb-2" /><p className="text-sm font-bold text-white">P2P Stream Active</p></div></div>
                                 </div>
                             ) : (
                                 <iframe src={getEmbedUrl()} className="w-full h-full" frameBorder="0" allowFullScreen allow="autoplay; encrypted-media; picture-in-picture" referrerPolicy="origin"></iframe>
