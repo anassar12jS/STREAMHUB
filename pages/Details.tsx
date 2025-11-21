@@ -145,12 +145,12 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
           : `https://cinemaos.tech/player/${id}/${s}/${e}`;
       case 'vidlink':
         return item.media_type === MediaType.MOVIE 
-          ? `https://vidlink.pro/movie/${id}?primaryColor=a855f7` 
-          : `https://vidlink.pro/tv/${id}/${s}/${e}?primaryColor=a855f7`;
+          ? `https://vidlink.pro/movie/${id}` 
+          : `https://vidlink.pro/tv/${id}/${s}/${e}`;
       case 'vidfastpro':
         return item.media_type === MediaType.MOVIE 
           ? `https://vidfast.pro/movie/${id}`
-          : `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true`;
+          : `https://vidfast.pro/tv/${id}/${s}/${e}`;
       default:
         return '';
     }
