@@ -145,12 +145,12 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
           : `https://cinemaos.tech/player/${id}/${s}/${e}`;
       case 'vidlink':
         return item.media_type === MediaType.MOVIE 
-          ? `https://vidlink.pro/movie/${id}` 
-          : `https://vidlink.pro/tv/${id}/${s}/${e}`;
+          ? `https://vidlink.pro/movie/${id}?primaryColor=a855f7` 
+          : `https://vidlink.pro/tv/${id}/${s}/${e}?primaryColor=a855f7`;
       case 'vidfastpro':
         return item.media_type === MediaType.MOVIE 
           ? `https://vidfast.pro/movie/${id}`
-          : `https://vidfast.pro/tv/${id}/${s}/${e}`;
+          : `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true`;
       default:
         return '';
     }
@@ -185,7 +185,11 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
   const servers = [
       { id: 'vidsrc-wtf', label: 'VidSrc WTF', icon: Zap, badge: 'Fastest' },
       { id: 'vidsrc-cc', label: 'VidSrc CC', icon: PlayCircle, badge: 'New' },
-      { id: 'vidsrcpro', label: 'VidSrc Pro', icon: Server, badge: 'Reliable' },
+      { id: 'vidlink', label: 'VidLink', icon: Server, badge: 'Multi-lang' },
+      { id: 'videasy', label: 'Videasy', icon: Film, badge: '' },
+      { id: 'vidora', label: 'Vidora', icon: Tv, badge: '' },
+      { id: 'cinemaos', label: 'CinemaOS', icon: Layers, badge: '' },
+      { id: 'vidfastpro', label: 'VidFast', icon: Zap, badge: '' },
   ];
 
   return (
