@@ -117,40 +117,48 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
   }
 
   const getEmbedUrl = () => {
-    const imdbId = detail.external_ids?.imdb_id || `tmdb:${item.id}`;
+    const tmdbId = item.id;
+    const imdbId = detail.external_ids?.imdb_id;
     const s = selectedSeason;
     const e = selectedEpisode;
-    const id = detail.external_ids?.imdb_id || item.id;
 
     switch (server) {
       case 'vidsrc-wtf':
+        // VidSrc usually supports IMDB IDs best, but falls back to TMDB
+        const vidsrcId = imdbId || tmdbId;
         return item.media_type === MediaType.MOVIE
-          ? `https://vidsrc.wtf/api/1/movie/?id=${id}`
-          : `https://vidsrc.wtf/api/1/tv/?id=${id}&s=${s}&e=${e}`;
+          ? `https://vidsrc.wtf/api/1/movie/?id=${vidsrcId}`
+          : `https://vidsrc.wtf/api/1/tv/?id=${vidsrcId}&s=${s}&e=${e}`;
       case 'vidsrc-cc':
+         const vidsrcCcId = imdbId || `tmdb:${tmdbId}`;
         return item.media_type === MediaType.MOVIE
-          ? `https://vidsrc.cc/v2/embed/movie/${imdbId}`
-          : `https://vidsrc.cc/v2/embed/tv/${imdbId}/${s}/${e}`;
+          ? `https://vidsrc.cc/v2/embed/movie/${vidsrcCcId}`
+          : `https://vidsrc.cc/v2/embed/tv/${vidsrcCcId}/${s}/${e}`;
       case 'videasy':
+        // Videasy expects TMDB ID
         return item.media_type === MediaType.MOVIE
-          ? `https://player.videasy.net/movie/${id}`
-          : `https://player.videasy.net/tv/${id}/${s}/${e}`;
+          ? `https://player.videasy.net/movie/${tmdbId}`
+          : `https://player.videasy.net/tv/${tmdbId}/${s}/${e}`;
       case 'vidora':
+        // Vidora expects TMDB ID
         return item.media_type === MediaType.MOVIE
-          ? `https://vidora.su/movie/${id}`
-          : `https://vidora.su/tv/${id}/${s}/${e}`;
+          ? `https://vidora.su/movie/${tmdbId}`
+          : `https://vidora.su/tv/${tmdbId}/${s}/${e}`;
       case 'cinemaos':
+        // CinemaOS expects TMDB ID
         return item.media_type === MediaType.MOVIE
-          ? `https://cinemaos.tech/player/${id}`
-          : `https://cinemaos.tech/player/${id}/${s}/${e}`;
+          ? `https://cinemaos.tech/player/${tmdbId}`
+          : `https://cinemaos.tech/player/${tmdbId}/${s}/${e}`;
       case 'vidlink':
+        // VidLink expects TMDB ID
         return item.media_type === MediaType.MOVIE 
-          ? `https://vidlink.pro/movie/${id}?primaryColor=a855f7` 
-          : `https://vidlink.pro/tv/${id}/${s}/${e}?primaryColor=a855f7`;
+          ? `https://vidlink.pro/movie/${tmdbId}?primaryColor=a855f7` 
+          : `https://vidlink.pro/tv/${tmdbId}/${s}/${e}?primaryColor=a855f7`;
       case 'vidfastpro':
+        // VidFast expects TMDB ID
         return item.media_type === MediaType.MOVIE 
-          ? `https://vidfast.pro/movie/${id}`
-          : `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true`;
+          ? `https://vidfast.pro/movie/${tmdbId}`
+          : `https://vidfast.pro/tv/${tmdbId}/${s}/${e}?autoPlay=true`;
       default:
         return '';
     }
