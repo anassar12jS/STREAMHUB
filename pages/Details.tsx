@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { TMDBResult, TMDBDetail, MediaType, Stream, TMDBVideo, Collection } from '../types';
 import { getDetails, getVideos, getRecommendations, getCollection } from '../services/tmdb';
@@ -17,7 +16,7 @@ interface DetailsProps {
   onNavigate: (view: string) => void;
 }
 
-type ServerType = 'vidsrc-wtf' | 'vidsrc-cc' | 'videasy' | 'vidora' | 'cinemaos' | 'vidlink' | 'vidfastpro';
+type ServerType = 'vidsrc-wtf' | 'vidsrc-cc' | 'videasy' | 'vidora' | 'cinemaos' | 'vidlink' | 'vidfastpro' | 'direct';
 
 export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, onNavigate }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
@@ -121,6 +120,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
     const imdbId = detail.external_ids?.imdb_id || `tmdb:${item.id}`;
     const s = selectedSeason;
     const e = selectedEpisode;
+    const id = detail.external_ids?.imdb_id || item.id;
 
     switch (server) {
       case 'vidsrc-wtf':
@@ -131,7 +131,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         return item.media_type === MediaType.MOVIE
           ? `https://vidsrc.cc/v2/embed/movie/${imdbId}`
           : `https://vidsrc.cc/v2/embed/tv/${imdbId}/${s}/${e}`;
-              case 'videasy':
+      case 'videasy':
         return item.media_type === MediaType.MOVIE
           ? `https://player.videasy.net/movie/${id}`
           : `https://player.videasy.net/tv/${id}/${s}/${e}`;
@@ -150,7 +150,9 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
       case 'vidfastpro':
         return item.media_type === MediaType.MOVIE 
           ? `https://vidfast.pro/movie/${id}`
-          : `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true
+          : `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true`;
+      default:
+        return '';
     }
   };
 
@@ -161,7 +163,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         setServer('direct');
         setShowPlayer(true);
     } else if (stream.infoHash) {
-const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
+        const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(stream.title || 'video')}`;
         window.location.href = magnet;
     }
   };
