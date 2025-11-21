@@ -130,7 +130,8 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
           ? `https://vidsrc.wtf/api/1/movie/?id=${vidsrcId}`
           : `https://vidsrc.wtf/api/1/tv/?id=${vidsrcId}&s=${s}&e=${e}`;
       case 'vidsrc-cc':
-         const vidsrcCcId = imdbId || `tmdb:${tmdbId}`;
+         // Switch to TMDB ID as primary to reduce dependency on IMDB
+         const vidsrcCcId = `tmdb:${tmdbId}`;
         return item.media_type === MediaType.MOVIE
           ? `https://vidsrc.cc/v2/embed/movie/${vidsrcCcId}`
           : `https://vidsrc.cc/v2/embed/tv/${vidsrcCcId}/${s}/${e}`;
