@@ -36,6 +36,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
   const [videoError, setVideoError] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
   const playerRef = useRef<HTMLDivElement>(null);
+  const streamsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchInfo = async () => {
@@ -106,6 +107,13 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
      window.history.pushState({ view: 'details', item: rec }, '', `?id=${rec.id}&type=${rec.media_type}`);
      window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'details', item: rec } }));
      window.scrollTo(0,0);
+  };
+
+  const scrollToStreams = () => {
+    setStreamsExpanded(true);
+    setTimeout(() => {
+        streamsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
   };
 
   if (!detail) {
@@ -231,18 +239,27 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                     <div className="rounded-lg overflow-hidden shadow-2xl border border-[var(--border-color)] aspect-[2/3]">
                         <img src={posterUrl} alt={detail.title} className="w-full h-full object-cover" />
                     </div>
-                    <button onClick={handleDirectPlay} className="flex items-center justify-center w-full gap-2 bg-[var(--text-main)] text-[var(--bg-main)] font-bold py-3 rounded hover:opacity-90 transition-opacity group">
-                        <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" /> <span>Play Now</span>
-                    </button>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button onClick={toggleLibrary} className={`flex items-center justify-center gap-2 border font-medium py-3 rounded transition-colors ${inLibrary ? 'bg-[rgb(var(--primary-color))]/20 border-[rgb(var(--primary-color))] text-[rgb(var(--primary-color))]' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--bg-hover)]'}`}>
-                            {inLibrary ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />} <span>{inLibrary ? 'Saved' : 'My List'}</span>
-                        </button>
-                        {trailer && (
-                            <a href={`https://www.youtube.com/watch?v=${trailer.key}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] font-medium py-3 rounded hover:bg-[var(--bg-hover)] transition-colors">
-                                <Youtube className="w-5 h-5 text-red-600" /> <span>Trailer</span>
-                            </a>
-                        )}
+                    
+                    <div className="space-y-3">
+                        <div className="flex gap-3">
+                            <button onClick={handleDirectPlay} className="flex-[2] flex items-center justify-center gap-2 bg-[var(--text-main)] text-[var(--bg-main)] font-bold py-3 px-4 rounded hover:opacity-90 transition-opacity group text-lg">
+                                <PlayCircle className="w-6 h-6 group-hover:scale-110 transition-transform" /> <span>Play Now</span>
+                            </button>
+                            <button onClick={scrollToStreams} className="flex-1 flex items-center justify-center gap-2 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] font-bold py-3 px-4 rounded hover:bg-[var(--bg-hover)] transition-colors">
+                                <Download className="w-5 h-5" /> <span>Download</span>
+                            </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={toggleLibrary} className={`flex items-center justify-center gap-2 border font-medium py-3 rounded transition-colors ${inLibrary ? 'bg-[rgb(var(--primary-color))]/20 border-[rgb(var(--primary-color))] text-[rgb(var(--primary-color))]' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--bg-hover)]'}`}>
+                                {inLibrary ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />} <span>{inLibrary ? 'Saved' : 'My List'}</span>
+                            </button>
+                            {trailer && (
+                                <a href={`https://www.youtube.com/watch?v=${trailer.key}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] font-medium py-3 rounded hover:bg-[var(--bg-hover)] transition-colors">
+                                    <Youtube className="w-5 h-5 text-red-600" /> <span>Trailer</span>
+                                </a>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -252,8 +269,8 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                     <div className="w-28 shrink-0 rounded overflow-hidden shadow-lg border border-[var(--border-color)] aspect-[2/3]">
                         <img src={posterUrl} className="w-full h-full object-cover" />
                     </div>
-                    <div className="flex flex-col justify-center gap-2">
-                         <h1 className="text-xl font-bold text-[var(--text-main)] leading-tight">{detail.title || detail.name}</h1>
+                    <div className="flex flex-col justify-center gap-2 min-w-0 flex-1">
+                         <h1 className="text-xl font-bold text-[var(--text-main)] leading-tight truncate">{detail.title || detail.name}</h1>
                          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
                             <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
                             <span className="text-[var(--text-main)]">{detail.vote_average.toFixed(1)}</span>
@@ -261,8 +278,9 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                             <span>{detail.release_date?.split('-')[0] || 'N/A'}</span>
                          </div>
                          <div className="flex gap-2 mt-2">
-                            <button onClick={handleDirectPlay} className="bg-[var(--text-main)] text-[var(--bg-main)] text-xs font-bold py-2 px-4 rounded flex items-center gap-2"><PlayCircle className="w-4 h-4" /> Play</button>
-                            <button onClick={toggleLibrary} className={`text-xs font-bold py-2 px-3 rounded flex items-center gap-2 border ${inLibrary ? 'bg-[rgb(var(--primary-color))]/20 border-[rgb(var(--primary-color))] text-[rgb(var(--primary-color))]' : 'border-[var(--border-color)] text-[var(--text-main)]'}`}>{inLibrary ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}</button>
+                            <button onClick={handleDirectPlay} className="flex-1 bg-[var(--text-main)] text-[var(--bg-main)] text-xs font-bold py-2 px-3 rounded flex items-center justify-center gap-1.5"><PlayCircle className="w-4 h-4" /> Play</button>
+                            <button onClick={scrollToStreams} className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold py-2 px-3 rounded flex items-center justify-center gap-1.5"><Download className="w-4 h-4" /> Download</button>
+                            <button onClick={toggleLibrary} className={`w-10 flex items-center justify-center text-xs font-bold py-2 rounded border ${inLibrary ? 'bg-[rgb(var(--primary-color))]/20 border-[rgb(var(--primary-color))] text-[rgb(var(--primary-color))]' : 'border-[var(--border-color)] text-[var(--text-main)]'}`}>{inLibrary ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}</button>
                          </div>
                     </div>
                 </div>
@@ -413,7 +431,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                     </div>
                 )}
 
-                <div>
+                <div ref={streamsRef}>
                     <div 
                         className="flex items-center justify-between mb-4 cursor-pointer select-none" 
                         onClick={() => setStreamsExpanded(!streamsExpanded)}
