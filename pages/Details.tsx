@@ -185,7 +185,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
   const servers = [
       { id: 'vidsrc-wtf', label: 'VidSrc WTF', icon: Zap, badge: 'Fastest' },
       { id: 'vidsrc-cc', label: 'VidSrc CC', icon: PlayCircle, badge: 'New' },
-      { id: 'vidsrc-pro', label: 'VidSrc Pro', icon: Server, badge: 'Reliable' },
+      { id: 'vidsrcpro', label: 'VidSrc Pro', icon: Server, badge: 'Reliable' },
   ];
 
   return (
