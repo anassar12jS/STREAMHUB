@@ -1,11 +1,64 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IPTVChannel } from '../types';
-import { Tv2, Search, AlertCircle, Upload, Globe, Layers, Film } from 'lucide-react';
+import { Tv2, Search, AlertCircle, Upload, Globe, Layers, Film, Filter } from 'lucide-react';
 import Hls from 'hls.js';
-import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
+
+// Custom Virtual List implementation to replace react-window due to type errors
+interface ListChildComponentProps {
+  index: number;
+  style: React.CSSProperties;
+}
+
+const List: React.FC<{
+  height: number;
+  width: number;
+  itemCount: number;
+  itemSize: number;
+  className?: string;
+  children: React.ComponentType<ListChildComponentProps>;
+}> = ({ height, width, itemCount, itemSize, className, children: Row }) => {
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const totalHeight = itemCount * itemSize;
+  const overscan = 5;
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemSize) - overscan);
+  const endIndex = Math.min(
+    itemCount - 1,
+    Math.floor((scrollTop + height) / itemSize) + overscan
+  );
+
+  const items = [];
+  for (let i = startIndex; i <= endIndex; i++) {
+    items.push(
+      <Row
+        key={i}
+        index={i}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: `${itemSize}px`,
+          transform: `translateY(${i * itemSize}px)`,
+        }}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={className}
+      style={{ height, width, overflowY: 'auto', position: 'relative' }}
+      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+    >
+      <div style={{ height: totalHeight, width: '100%', position: 'relative' }}>
+        {items}
+      </div>
+    </div>
+  );
+};
 
 // Custom hook for debouncing input
-// FIX: Corrected syntax for useEffect hook. The callback was closed prematurely.
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
@@ -149,6 +202,7 @@ export const LiveTV: React.FC = () => {
 
   const ChannelRow: React.FC<ListChildComponentProps> = ({ index, style }) => {
     const channel = filteredChannels[index];
+    if (!channel) return null; // Safety check
     return (
       <div style={style}>
         <button
@@ -157,16 +211,23 @@ export const LiveTV: React.FC = () => {
         >
             <div className={`w-1 absolute left-0 top-0 bottom-0 transition-all duration-300 ${activeChannel?.url === channel.url ? 'bg-[rgb(var(--primary-color))]' : 'bg-transparent'}`}></div>
             <div className="w-12 h-12 bg-white/5 rounded-md flex items-center justify-center shrink-0 overflow-hidden ml-2">
-                {/* FIX: Corrected invalid assignment to optional property `parentElement.innerHTML` by using a guard clause. */}
-                {channel.logo ? ( <img src={channel.logo} alt="" className="w-full h-full object-contain" onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      parent.classList.add('flex', 'items-center', 'justify-center');
-                      parent.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--text-muted)]"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 15h4M14 15h2M7 11h2M13 11h4M7 7h4M15 7h2"/></svg>`;
-                    }
-                }} />) 
-                : ( <Tv2 className="w-5 h-5 text-[var(--text-muted)]" /> )}
+                {channel.logo ? ( 
+                    <img 
+                        src={channel.logo} 
+                        alt="" 
+                        className="w-full h-full object-contain" 
+                        onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                                parent.classList.add('flex', 'items-center', 'justify-center');
+                                parent.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--text-muted)]"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 15h4M14 15h2M7 11h2M13 11h4M7 7h4M15 7h2"/></svg>`;
+                            }
+                        }} 
+                    />
+                ) : ( 
+                    <Tv2 className="w-5 h-5 text-[var(--text-muted)]" /> 
+                )}
             </div>
             <div className="min-w-0">
                 <p className={`text-sm font-bold truncate ${activeChannel?.url === channel.url ? 'text-[rgb(var(--primary-color))]' : 'text-[var(--text-main)]'}`}>{channel.name}</p>

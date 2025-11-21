@@ -126,16 +126,16 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
     switch (server) {
       case 'vidsrc-wtf':
         return item.media_type === MediaType.MOVIE
-          ? `https://vidsrc.wtf/embed/movie/${id}`
-          : `https://vidsrc.wtf/embed/tv/${id}/${s}/${e}`;
+          ? `https://vidsrc.wtf/api/1/movie/${id}`
+          : `https://vidsrc.wtf/api/1/tv/${id}/${s}/${e}`;
       case 'videasy':
         return item.media_type === MediaType.MOVIE
           ? `https://player.videasy.net/movie/${id}`
           : `https://player.videasy.net/tv/${id}/${s}/${e}`;
       case 'vidora':
         return item.media_type === MediaType.MOVIE
-          ? `https://vidora.su/embed/movie/${id}`
-          : `https://vidora.su/embed/tv/${id}/${s}/${e}`;
+          ? `https://vidora.su/movie/${id}`
+          : `https://vidora.su/tv/${id}/${s}/${e}`;
       case 'cinemaos':
         return item.media_type === MediaType.MOVIE
           ? `https://cinemaos.tech/player/${id}`
