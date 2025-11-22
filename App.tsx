@@ -6,6 +6,7 @@ import { Home } from './pages/Home';
 import { Details } from './pages/Details';
 import { Library } from './pages/Library';
 import { Sports } from './pages/Sports';
+import { SportsPlayer } from './pages/SportsPlayer';
 import { Discover } from './pages/Discover';
 import { Person } from './pages/Person';
 import { Anime } from './pages/Anime';
@@ -14,15 +15,16 @@ import { DMCA, Privacy, Terms } from './pages/Legal';
 import { SettingsModal } from './components/SettingsModal';
 import { searchMedia, getDetails } from './services/tmdb';
 import { getTheme, getMode, setMode as setStorageMode } from './services/storage';
-import { TMDBResult, MediaType } from './types';
+import { TMDBResult, MediaType, SportsMatch } from './types';
 import { MediaCard } from './components/MediaCard';
 
-type ViewState = 'home' | 'details' | 'search' | 'library' | 'sports' | 'discover' | 'person' | 'anime' | 'livetv' | 'dmca' | 'privacy' | 'terms';
+type ViewState = 'home' | 'details' | 'search' | 'library' | 'sports' | 'play-sports' | 'discover' | 'person' | 'anime' | 'livetv' | 'dmca' | 'privacy' | 'terms';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('home');
   const [selectedItem, setSelectedItem] = useState<TMDBResult | null>(null);
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<SportsMatch | null>(null);
   const [searchResults, setSearchResults] = useState<TMDBResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -107,6 +109,7 @@ const App: React.FC = () => {
         setView(event.state.view);
         setSelectedItem(event.state.item || null);
         if (event.state.personId) setSelectedPersonId(event.state.personId);
+        if (event.state.match) setSelectedMatch(event.state.match);
         setSearchQuery(event.state.query || '');
         if (event.state.view === 'search' && event.state.query) {
            searchMedia(event.state.query).then(setSearchResults);
@@ -153,6 +156,13 @@ const App: React.FC = () => {
     window.scrollTo(0, 0);
   };
 
+  const handleSportsPlay = (match: SportsMatch) => {
+    setSelectedMatch(match);
+    setView('play-sports');
+    window.history.pushState({ view: 'play-sports', match }, '', '#sports-player');
+    window.scrollTo(0, 0);
+  };
+
   const handleNavigate = (target: string) => {
     setView(target as ViewState);
     const path = target === 'home' ? '/' : `#${target}`;
@@ -165,20 +175,27 @@ const App: React.FC = () => {
     else handleNavigate('home');
   };
 
+  // Logic to hide Navbar/Footer on specific player pages
+  const isFullScreenPlayer = view === 'play-sports';
+
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-sans flex flex-col transition-colors duration-300" style={({ '--primary-color': themeColor } as React.CSSProperties)}>
-      <Navbar 
-        onSearch={handleSearch} 
-        onNavigate={handleNavigate} 
-        onOpenSettings={() => setIsSettingsOpen(true)} 
-        currentMode={mode}
-        onToggleMode={toggleMode}
-      />
+      
+      {!isFullScreenPlayer && (
+        <Navbar 
+            onSearch={handleSearch} 
+            onNavigate={handleNavigate} 
+            onOpenSettings={() => setIsSettingsOpen(true)} 
+            currentMode={mode}
+            onToggleMode={toggleMode}
+        />
+      )}
       
       <main className="flex-grow">
         {view === 'home' && <Home onSelect={handleSelect} />}
         {view === 'library' && <Library onSelect={handleSelect} />}
-        {view === 'sports' && <Sports />}
+        {view === 'sports' && <Sports onPlay={handleSportsPlay} />}
+        {view === 'play-sports' && selectedMatch && <SportsPlayer match={selectedMatch} onBack={handleBack} />}
         {view === 'discover' && <Discover onSelect={handleSelect} />}
         {view === 'anime' && <Anime onSelect={handleSelect} />}
         {view === 'livetv' && <LiveTV />}
@@ -209,8 +226,8 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Hide global footer on details view, as it is rendered inside Details component */}
-      {view !== 'details' && <Footer onNavigate={handleNavigate} />}
+      {/* Hide global footer on details view (rendered internal) and sports player */}
+      {view !== 'details' && view !== 'play-sports' && <Footer onNavigate={handleNavigate} />}
       
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
