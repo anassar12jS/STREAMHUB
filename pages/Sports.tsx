@@ -1,8 +1,38 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trophy, Calendar, PlayCircle, AlertCircle, X, Clock, Zap, Loader2, Filter, Radio, Maximize2 } from 'lucide-react';
+import { Trophy, Calendar, PlayCircle, AlertCircle, X, Clock, Zap, Loader2, Filter, Radio, Maximize2, Bell, BellRing } from 'lucide-react';
 import { getAllMatches, getStreamUrl } from '../services/sports';
 import { SportsMatch, SportsMatchSource } from '../types';
+
+const TeamLogo: React.FC<{ name: string, className?: string }> = ({ name, className = "w-8 h-8" }) => {
+    // Generate a consistent color based on the name
+    const getColor = (str: string) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+        return '#' + '00000'.substring(0, 6 - c.length) + c;
+    };
+
+    // Get initials (up to 2)
+    const initials = name.split(' ')
+        .map(n => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+
+    const bg = getColor(name);
+
+    return (
+        <div 
+            className={`rounded-full flex items-center justify-center text-white font-bold shadow-sm border border-white/10 ${className}`} 
+            style={{ backgroundColor: bg, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+        >
+            {initials}
+        </div>
+    );
+};
 
 export const Sports: React.FC = () => {
   const [matches, setMatches] = useState<SportsMatch[]>([]);
@@ -15,6 +45,7 @@ export const Sports: React.FC = () => {
   const [currentMatchTitle, setCurrentMatchTitle] = useState<string>('');
   const [isLoadingStream, setIsLoadingStream] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
+  const [notifiedMatches, setNotifiedMatches] = useState<string[]>([]);
 
   // Source Modal State
   const [selectedMatchForSource, setSelectedMatchForSource] = useState<SportsMatch | null>(null);
@@ -70,16 +101,9 @@ export const Sports: React.FC = () => {
         const idxA = priority.indexOf(a);
         const idxB = priority.indexOf(b);
         
-        // Both in priority list -> sort by order in priority list
         if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        
-        // Only A is in priority -> A comes first
         if (idxA !== -1) return -1;
-        
-        // Only B is in priority -> B comes first
         if (idxB !== -1) return 1;
-        
-        // Neither in priority -> sort alphabetically
         return a.localeCompare(b);
     });
 
@@ -121,6 +145,51 @@ export const Sports: React.FC = () => {
     setStreamUrl(null);
   };
 
+  const handleNotify = (match: SportsMatch, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!("Notification" in window)) {
+          alert("This browser does not support notifications.");
+          return;
+      }
+
+      if (Notification.permission === "granted") {
+          scheduleNotification(match);
+      } else if (Notification.permission !== "denied") {
+          Notification.requestPermission().then(permission => {
+              if (permission === "granted") {
+                  scheduleNotification(match);
+              }
+          });
+      }
+  };
+
+  const scheduleNotification = (match: SportsMatch) => {
+      const now = Date.now();
+      const diff = match.date - now;
+      
+      if (diff > 0) {
+          setNotifiedMatches(prev => [...prev, match.title]);
+          
+          // Notify 5 mins before if possible, else immediately if close
+          const timeout = Math.max(0, diff - (5 * 60 * 1000)); 
+          
+          setTimeout(() => {
+              new Notification("Match Starting Soon!", {
+                  body: `${match.title} is starting in 5 minutes!`,
+                  icon: "https://cdn-icons-png.flaticon.com/512/4221/4221484.png"
+              });
+          }, timeout);
+          
+          // Also notify at exact start time
+          setTimeout(() => {
+               new Notification("Match Started!", {
+                  body: `${match.title} is live now!`,
+                  icon: "https://cdn-icons-png.flaticon.com/512/4221/4221484.png"
+              });
+          }, diff);
+      }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 min-h-screen animate-fade-in">
       
@@ -128,7 +197,7 @@ export const Sports: React.FC = () => {
       <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-10">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="bg-blue-600 p-2.5 rounded-lg">
+            <div className="bg-blue-600 p-2.5 rounded-lg shadow-lg shadow-blue-900/20">
                <Trophy className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-4xl font-black text-[var(--text-main)] tracking-tight uppercase italic">Live Sports</h2>
@@ -146,8 +215,8 @@ export const Sports: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="sticky top-20 z-30 bg-[var(--bg-main)]/95 backdrop-blur-sm py-4 mb-8 -mx-4 px-4 border-b border-[var(--border-color)]">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <div className="sticky top-16 z-30 bg-[var(--bg-main)]/95 backdrop-blur-sm py-4 mb-8 -mx-4 px-4 border-b border-[var(--border-color)]">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
             <Filter className="w-5 h-5 text-[var(--text-muted)] shrink-0 mr-2" />
             {categories.map(cat => (
                 <button
@@ -184,7 +253,8 @@ export const Sports: React.FC = () => {
                         const dateObj = new Date(match.date);
                         const timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                         const dateStr = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'});
-                        
+                        const isNotified = notifiedMatches.includes(match.title);
+
                         return (
                             <div 
                                 key={idx}
@@ -233,8 +303,9 @@ export const Sports: React.FC = () => {
                                     <div className="flex items-center justify-between gap-4">
                                         {match.teams?.home && match.teams?.away ? (
                                             <>
-                                                <div className="flex-1 text-left">
-                                                    <h3 className={`font-black leading-tight uppercase ${isLive ? 'text-[var(--text-main)] text-xl md:text-2xl' : 'text-[var(--text-muted)] text-lg'}`}>
+                                                <div className="flex-1 flex flex-col items-center text-center sm:items-start sm:text-left gap-2">
+                                                    <TeamLogo name={match.teams.home.name} className="w-12 h-12 sm:w-10 sm:h-10 text-lg" />
+                                                    <h3 className={`font-black leading-tight uppercase ${isLive ? 'text-[var(--text-main)] text-lg md:text-xl' : 'text-[var(--text-muted)] text-base'}`}>
                                                         {match.teams.home.name}
                                                     </h3>
                                                 </div>
@@ -243,8 +314,9 @@ export const Sports: React.FC = () => {
                                                     <span className="text-[var(--text-muted)] font-black text-2xl italic opacity-50">VS</span>
                                                 </div>
 
-                                                <div className="flex-1 text-right">
-                                                    <h3 className={`font-black leading-tight uppercase ${isLive ? 'text-[var(--text-main)] text-xl md:text-2xl' : 'text-[var(--text-muted)] text-lg'}`}>
+                                                <div className="flex-1 flex flex-col items-center text-center sm:items-end sm:text-right gap-2">
+                                                    <TeamLogo name={match.teams.away.name} className="w-12 h-12 sm:w-10 sm:h-10 text-lg" />
+                                                    <h3 className={`font-black leading-tight uppercase ${isLive ? 'text-[var(--text-main)] text-lg md:text-xl' : 'text-[var(--text-muted)] text-base'}`}>
                                                         {match.teams.away.name}
                                                     </h3>
                                                 </div>
@@ -265,9 +337,19 @@ export const Sports: React.FC = () => {
                                                 <PlayCircle className="w-4 h-4" /> WATCH
                                             </button>
                                         ) : (
-                                            <button disabled className="bg-[var(--bg-hover)] text-[var(--text-muted)] px-6 py-2 rounded font-bold text-sm flex items-center gap-2 cursor-not-allowed">
-                                                <Clock className="w-4 h-4" /> UPCOMING
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={(e) => handleNotify(match, e)}
+                                                    disabled={isNotified}
+                                                    className={`px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-colors border ${isNotified ? 'bg-[rgb(var(--primary-color))]/20 text-[rgb(var(--primary-color))] border-[rgb(var(--primary-color))]' : 'bg-transparent text-[var(--text-muted)] border-[var(--border-color)] hover:text-[var(--text-main)] hover:border-[var(--text-main)]'}`}
+                                                >
+                                                    {isNotified ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                                                    {isNotified ? 'SET' : 'NOTIFY'}
+                                                </button>
+                                                <button disabled className="bg-[var(--bg-hover)] text-[var(--text-muted)] px-4 py-2 rounded font-bold text-sm flex items-center gap-2 cursor-not-allowed opacity-50">
+                                                    <Clock className="w-4 h-4" /> SOON
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>

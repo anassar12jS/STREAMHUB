@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
-import { X, Save, AlertTriangle, Link as LinkIcon, CheckCircle, Palette, Settings } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Save, AlertTriangle, Link as LinkIcon, CheckCircle, Palette, Settings, Download, Upload, Database } from 'lucide-react';
 import { TORRENTIO_BASE_URL } from '../constants';
-import { setTheme, getTheme } from '../services/storage';
+import { setTheme, getTheme, exportData, importData } from '../services/storage';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [url, setUrl] = useState('');
   const [saved, setSaved] = useState(false);
   const [activeTheme, setActiveTheme] = useState('purple');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('torrentio_url');
@@ -39,16 +40,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   };
 
   const handleReset = () => {
-    localStorage.removeItem('torrentio_url');
-    setUrl(TORRENTIO_BASE_URL);
-    setActiveTheme('purple');
-    setTheme('purple');
-    setSaved(true);
-    setTimeout(() => {
-        setSaved(false);
-        onClose();
-        window.location.reload();
-    }, 800);
+    if (confirm("Are you sure you want to reset all settings?")) {
+        localStorage.removeItem('torrentio_url');
+        setUrl(TORRENTIO_BASE_URL);
+        setActiveTheme('purple');
+        setTheme('purple');
+        setSaved(true);
+        setTimeout(() => {
+            setSaved(false);
+            onClose();
+            window.location.reload();
+        }, 800);
+    }
+  };
+
+  const handleExport = () => {
+      const data = exportData();
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `streamhub-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+  };
+
+  const handleImportClick = () => {
+      fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          const json = event.target?.result as string;
+          if (importData(json)) {
+              alert("Data imported successfully! Reloading...");
+              window.location.reload();
+          } else {
+              alert("Failed to import data. Invalid file format.");
+          }
+      };
+      reader.readAsText(file);
   };
 
   const themes = [
@@ -65,7 +102,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-in fade-in duration-200">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}></div>
       
-      <div className="relative bg-[var(--bg-card)] border border-[var(--border-color)] w-full max-w-lg rounded-xl shadow-2xl p-6 text-[var(--text-main)]">
+      <div className="relative bg-[var(--bg-card)] border border-[var(--border-color)] w-full max-w-lg rounded-xl shadow-2xl p-6 text-[var(--text-main)] max-h-[90vh] overflow-y-auto custom-scrollbar">
         <button onClick={onClose} className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)]">
           <X className="w-5 h-5" />
         </button>
@@ -114,6 +151,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     <div className="text-xs text-blue-400/80 leading-relaxed">
                     For <b>instant 4K streaming</b>, configure <a href="https://torrentio.strem.fun/configure" target="_blank" rel="noreferrer" className="underline hover:text-[var(--text-main)]">Torrentio with Real-Debrid</a> and paste the URL here.
                     </div>
+                </div>
+            </div>
+
+            {/* Data Section */}
+            <div>
+                <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase mb-3 flex items-center gap-2">
+                    <Database className="w-4 h-4" /> Data Management
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                    <button 
+                        onClick={handleExport}
+                        className="flex items-center justify-center gap-2 bg-[var(--bg-input)] border border-[var(--border-color)] hover:bg-[var(--bg-hover)] text-[var(--text-main)] py-2 rounded text-sm font-medium transition-colors"
+                    >
+                        <Download className="w-4 h-4" /> Export Backup
+                    </button>
+                    <button 
+                        onClick={handleImportClick}
+                        className="flex items-center justify-center gap-2 bg-[var(--bg-input)] border border-[var(--border-color)] hover:bg-[var(--bg-hover)] text-[var(--text-main)] py-2 rounded text-sm font-medium transition-colors"
+                    >
+                        <Upload className="w-4 h-4" /> Import Data
+                    </button>
+                    <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
                 </div>
             </div>
         </div>

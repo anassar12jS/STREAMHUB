@@ -1,4 +1,5 @@
 
+
 export enum MediaType {
   MOVIE = 'movie',
   TV = 'tv',
@@ -63,6 +64,7 @@ export interface PersonDetail {
 
 export interface TMDBDetail extends TMDBResult {
   genres: { id: number; name: string }[];
+  tagline?: string;
   external_ids?: {
     imdb_id?: string;
   };
@@ -158,6 +160,17 @@ export interface IPTVChannel {
   logo?: string;
   group?: string;
   url: string;
+}
+
+export interface ContinueWatchingItem {
+  id: number;
+  media_type: MediaType;
+  title: string;
+  poster_path: string | null;
+  season?: number;
+  episode?: number;
+  timestamp: number; // When they last watched
+  progress?: number; // % watched (optional for future)
 }
 
 declare global {

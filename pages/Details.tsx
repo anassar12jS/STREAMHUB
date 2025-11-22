@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { TMDBResult, TMDBDetail, MediaType, Stream, TMDBVideo, Collection } from '../types';
 import { getDetails, getVideos, getRecommendations, getCollection } from '../services/tmdb';
 import { getStreams, getEpisodeStreams } from '../services/addonService';
-import { isInWatchlist, addToWatchlist, removeFromWatchlist, addToHistory } from '../services/storage';
+import { isInWatchlist, addToWatchlist, removeFromWatchlist, addToHistory, saveProgress, getProgressForId } from '../services/storage';
 import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
 import { MediaCard } from '../components/MediaCard';
@@ -50,6 +51,13 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         setInLibrary(isInWatchlist(item.id));
         addToHistory(item);
         
+        // Check for previous progress
+        const progress = getProgressForId(item.id);
+        if (progress && progress.season && progress.episode) {
+            setSelectedSeason(progress.season);
+            setSelectedEpisode(progress.episode);
+        }
+
         const videos = await getVideos(item.id, item.media_type);
         const officialTrailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.find(v => v.site === 'YouTube');
         if (officialTrailer) setTrailer(officialTrailer);
@@ -108,14 +116,24 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
   };
 
   const activateSection = (section: ActiveSection) => {
+    if (section === 'player') {
+        // Save progress when player opens
+        saveProgress({
+            id: item.id,
+            media_type: item.media_type,
+            title: detail?.title || detail?.name || '',
+            poster_path: detail?.poster_path || null,
+            season: item.media_type === MediaType.TV ? selectedSeason : undefined,
+            episode: item.media_type === MediaType.TV ? selectedEpisode : undefined,
+        });
+    }
+    
     if (activeSection === section) {
-        // Optional: Toggle off if clicked again? 
-        // For now, just scroll to it if already active
+        // Toggle off logic if needed
     } else {
         setActiveSection(section);
     }
     
-    // Smooth scroll after a short delay to allow rendering
     setTimeout(() => {
         sectionContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
@@ -133,7 +151,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
               console.error("Error sharing:", err);
           }
       } else {
-          // Fallback: Copy to clipboard
           navigator.clipboard.writeText(window.location.href);
           alert("Link copied to clipboard!");
       }
@@ -148,35 +165,30 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
  switch (server) {
       case 'vidsrc-wtf':
         return item.media_type === MediaType.MOVIE
-          ? `https://vidsrc.wtf/api/2/movie/?id=${tmdbId}`
-          : `https://vidsrc.wtf/api/2/tv/?id=${tmdbId}&s=${s}&e=${e}`;
+          ? `https://vidsrc.xyz/embed/movie/${tmdbId}`
+          : `https://vidsrc.xyz/embed/tv/${tmdbId}/${s}-${e}`;
       case 'vidsrc-cc':
          const vidsrcCcId = imdbId || tmdbId;
         return item.media_type === MediaType.MOVIE
           ? `https://vidsrc.cc/v2/embed/movie/${vidsrcCcId}`
           : `https://vidsrc.cc/v2/embed/tv/${vidsrcCcId}/${s}/${e}`;
       case 'videasy':
-        // Videasy expects TMDB ID
         return item.media_type === MediaType.MOVIE
           ? `https://player.videasy.net/movie/${tmdbId}`
           : `https://player.videasy.net/tv/${tmdbId}/${s}/${e}`;
       case 'vidora':
-        // Vidora expects TMDB ID
         return item.media_type === MediaType.MOVIE
           ? `https://vidora.su/movie/${tmdbId}`
           : `https://vidora.su/tv/${tmdbId}/${s}/${e}`;
       case 'cinemaos':
-        // CinemaOS expects TMDB ID
         return item.media_type === MediaType.MOVIE
           ? `https://cinemaos.tech/player/${tmdbId}`
           : `https://cinemaos.tech/player/${tmdbId}/${s}/${e}`;
       case 'vidlink':
-        // VidLink expects TMDB ID
         return item.media_type === MediaType.MOVIE 
           ? `https://vidlink.pro/movie/${tmdbId}?primaryColor=a855f7` 
           : `https://vidlink.pro/tv/${tmdbId}/${s}/${e}?primaryColor=a855f7`;
       case 'vidfastpro':
-        // VidFast expects TMDB ID
         return item.media_type === MediaType.MOVIE 
           ? `https://vidfast.pro/movie/${tmdbId}`
           : `https://vidfast.pro/tv/${tmdbId}/${s}/${e}?autoPlay=true`;
@@ -258,7 +270,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8 lg:gap-12 mb-10">
-            {/* Left Column: Poster Only (Desktop) */}
             <div className="hidden lg:block">
                 <div className="sticky top-24 space-y-4">
                     <div className="rounded-lg overflow-hidden shadow-2xl border border-[var(--border-color)] aspect-[2/3] group relative">
@@ -271,9 +282,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                 </div>
             </div>
 
-            {/* Right Column: Info & Content */}
             <div className="flex flex-col min-w-0">
-                {/* Mobile Header */}
                 <div className="lg:hidden flex gap-4 mb-6">
                     <div className="w-28 shrink-0 rounded overflow-hidden shadow-lg border border-[var(--border-color)] aspect-[2/3]">
                         <img src={posterUrl} className="w-full h-full object-cover" />
@@ -292,7 +301,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                     </div>
                 </div>
 
-                {/* Desktop Title & Meta */}
                 <div className="hidden lg:block mb-6">
                     <h1 className="text-5xl font-bold text-[var(--text-main)] mb-4 tracking-tight">{detail.title || detail.name}</h1>
                     <div className="flex items-center gap-4 text-[var(--text-muted)] text-base">
@@ -305,13 +313,11 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                     </div>
                 </div>
 
-                {/* Overview */}
                 <div className="mb-8">
                     <h3 className="text-[var(--text-main)] font-bold text-lg mb-2 flex items-center gap-2"><Info className="w-4 h-4 opacity-70"/> Overview</h3>
                     <p className="text-[var(--text-muted)] leading-relaxed text-lg">{detail.overview}</p>
                 </div>
 
-                {/* Cast */}
                 {detail.credits && detail.credits.cast.length > 0 && (
                     <div className="mb-10">
                         <h3 className="text-[var(--text-main)] font-bold text-lg mb-4">Top Cast</h3>
@@ -337,7 +343,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                     </div>
                 )}
 
-                {/* ACTION BAR - The new centralized control center */}
                 <div className="mb-8 sticky top-4 z-20 bg-[var(--bg-main)]/90 backdrop-blur-xl p-2 rounded-2xl border border-[var(--border-color)] shadow-2xl flex flex-wrap gap-3 sm:flex-nowrap items-stretch">
                      <button 
                         onClick={() => activateSection('player')}
@@ -387,7 +392,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                      </div>
                 </div>
 
-                {/* Dynamic Content Section (Player or Streams) */}
                 <div ref={sectionContainerRef} className="scroll-mt-32 min-h-[50px]">
                     {activeSection === 'none' && (
                         <div className="text-center py-10 opacity-50 border-2 border-dashed border-[var(--border-color)] rounded-2xl">
@@ -396,11 +400,9 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                         </div>
                     )}
 
-                    {/* PLAYER SECTION */}
                     {activeSection === 'player' && (
                         <div ref={playerRef} className="animate-in fade-in slide-in-from-bottom-6 duration-500">
                             <div className="flex flex-col gap-4 bg-[var(--bg-card)] p-2 sm:p-4 rounded-2xl border border-[var(--border-color)] shadow-2xl">
-                                {/* Server Selector */}
                                 {server !== 'direct' && (
                                     <div className="flex items-center gap-3 mb-2 overflow-x-auto pb-2 custom-scrollbar">
                                         <span className="text-xs font-bold text-[var(--text-muted)] uppercase shrink-0 px-2">Server:</span>
@@ -433,7 +435,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                                     </div>
                                 )}
 
-                                {/* Episode Selector for TV */}
                                 {item.media_type === MediaType.TV && (
                                     <div className="flex flex-wrap gap-4 mb-2 bg-[var(--bg-input)]/50 p-3 rounded-xl border border-[var(--border-color)]">
                                         <div className="flex items-center gap-2">
@@ -458,7 +459,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                                     </div>
                                 )}
 
-                                {/* Video Container */}
                                 <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-inner relative group ring-1 ring-white/10">
                                     <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                                         <div className="pointer-events-auto flex items-center gap-2">
@@ -506,7 +506,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                         </div>
                     )}
 
-                    {/* DOWNLOADS / TORRENTS SECTION */}
                     {activeSection === 'downloads' && (
                         <div ref={streamsRef} className="animate-in fade-in slide-in-from-bottom-6 duration-500">
                              <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] overflow-hidden shadow-2xl">
@@ -557,7 +556,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
             </div>
         </div>
         
-        {/* Trailer Modal */}
         {showTrailerModal && trailer && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowTrailerModal(false)}>
                 <div className="relative w-full max-w-5xl aspect-video mx-4 bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/20">
