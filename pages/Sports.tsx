@@ -1,12 +1,18 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trophy, Calendar, PlayCircle, AlertCircle, X, Clock, Zap, Loader2, Filter, Radio, Maximize2, Bell, BellRing, RadioReceiver } from 'lucide-react';
-import { getAllMatches, getStreamUrl } from '../services/sports';
-import { SportsMatch, SportsMatchSource } from '../types';
+import { Trophy, Calendar, PlayCircle, Clock, Zap, Loader2, Filter, Bell, BellRing, RadioReceiver } from 'lucide-react';
+import { getAllMatches } from '../services/sports';
+import { SportsMatch } from '../types';
+
+interface SportsProps {
+  onPlay: (match: SportsMatch) => void;
+}
 
 // Memoize TeamLogo to prevent expensive color calculation on every render
-const TeamLogo: React.FC<{ name: string, className?: string }> = React.memo(({ name, className = "w-8 h-8" }) => {
-    // Generate a consistent color based on the name
+const TeamLogo: React.FC<{ name: string, logo?: string, className?: string }> = React.memo(({ name, logo, className = "w-8 h-8" }) => {
+    const [imgError, setImgError] = useState(false);
+
+    // Generate a consistent color based on the name (Fallback)
     const getColor = (str: string) => {
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
@@ -16,7 +22,21 @@ const TeamLogo: React.FC<{ name: string, className?: string }> = React.memo(({ n
         return '#' + '00000'.substring(0, 6 - c.length) + c;
     };
 
-    // Get initials (up to 2)
+    if (logo && !imgError) {
+        return (
+            <div className={`rounded-full flex items-center justify-center bg-white/5 border border-white/10 shrink-0 overflow-hidden relative ${className}`}>
+                <img 
+                    src={logo} 
+                    alt={name} 
+                    className="w-full h-full object-contain p-0.5" 
+                    loading="lazy" 
+                    onError={() => setImgError(true)} 
+                />
+            </div>
+        );
+    }
+
+    // Fallback: Initials
     const initials = name.split(' ')
         .map(n => n[0])
         .slice(0, 2)
@@ -35,21 +55,11 @@ const TeamLogo: React.FC<{ name: string, className?: string }> = React.memo(({ n
     );
 });
 
-export const Sports: React.FC = () => {
+export const Sports: React.FC<SportsProps> = ({ onPlay }) => {
   const [matches, setMatches] = useState<SportsMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('ALL');
-  
-  // Player State
-  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
-  const [streamUrl, setStreamUrl] = useState<string | null>(null);
-  const [currentMatchTitle, setCurrentMatchTitle] = useState<string>('');
-  const [isLoadingStream, setIsLoadingStream] = useState(false);
-  const [streamError, setStreamError] = useState<string | null>(null);
   const [notifiedMatches, setNotifiedMatches] = useState<string[]>([]);
-
-  // Source Modal State
-  const [selectedMatchForSource, setSelectedMatchForSource] = useState<SportsMatch | null>(null);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -89,8 +99,10 @@ export const Sports: React.FC = () => {
     const upcoming: SportsMatch[] = [];
 
     filtered.forEach(m => {
-        if (m.date <= now) live.push(m);
-        else upcoming.push(m);
+        // Consider match live if starts within last 2 hours or is in future but less than 15 mins away
+        const diff = m.date - now;
+        if (diff < 15 * 60 * 1000 && diff > -3 * 60 * 60 * 1000) live.push(m);
+        else if (diff >= 15 * 60 * 1000) upcoming.push(m);
     });
 
     return { liveMatches: live, upcomingMatches: upcoming };
@@ -113,41 +125,6 @@ export const Sports: React.FC = () => {
 
     return ['ALL', ...cats];
   }, [matches]);
-
-  const handlePlay = async (source: SportsMatchSource, title: string) => {
-    setStreamUrl(null);
-    setIsLoadingStream(true);
-    setStreamError(null);
-    setCurrentMatchTitle(title);
-    setSelectedMatchForSource(null); // Close source modal
-    setIsPlayerOpen(true); // Open Player Modal
-
-    try {
-        const url = await getStreamUrl(source.source, source.id);
-        if (url) {
-            setStreamUrl(url);
-        } else {
-            setStreamError('Stream source unavailable. Try another.');
-        }
-    } catch (e) {
-        setStreamError('Failed to load stream.');
-    } finally {
-        setIsLoadingStream(false);
-    }
-  };
-
-  const openSourceSelection = (match: SportsMatch) => {
-    if (match.sources.length === 1) {
-        handlePlay(match.sources[0], match.title);
-    } else {
-        setSelectedMatchForSource(match);
-    }
-  };
-
-  const closePlayer = () => {
-    setIsPlayerOpen(false);
-    setStreamUrl(null);
-  };
 
   const handleNotify = (match: SportsMatch, e: React.MouseEvent) => {
       e.stopPropagation();
@@ -194,7 +171,7 @@ export const Sports: React.FC = () => {
 
       return (
         <div 
-            onClick={() => isLive && openSourceSelection(match)}
+            onClick={() => isLive && onPlay(match)}
             className={`group relative overflow-hidden rounded-xl transition-all duration-300 border ${
                 isLive 
                     ? 'bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-hover)] border-blue-500/30 hover:border-blue-500/60 cursor-pointer hover:shadow-lg hover:shadow-blue-500/10' 
@@ -225,7 +202,7 @@ export const Sports: React.FC = () => {
                     {match.teams?.home && match.teams?.away ? (
                         <>
                             <div className="flex-1 flex flex-col items-center text-center gap-1.5 min-w-0">
-                                <TeamLogo name={match.teams.home.name} className="w-10 h-10 text-sm" />
+                                <TeamLogo name={match.teams.home.name} logo={match.teams.home.logo} className="w-10 h-10 text-sm" />
                                 <span className={`text-xs font-bold leading-tight line-clamp-2 ${isLive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
                                     {match.teams.home.name}
                                 </span>
@@ -234,7 +211,7 @@ export const Sports: React.FC = () => {
                             <div className="text-[var(--text-muted)] font-black text-xs opacity-30">VS</div>
 
                             <div className="flex-1 flex flex-col items-center text-center gap-1.5 min-w-0">
-                                <TeamLogo name={match.teams.away.name} className="w-10 h-10 text-sm" />
+                                <TeamLogo name={match.teams.away.name} logo={match.teams.away.logo} className="w-10 h-10 text-sm" />
                                 <span className={`text-xs font-bold leading-tight line-clamp-2 ${isLive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
                                     {match.teams.away.name}
                                 </span>
@@ -356,90 +333,6 @@ export const Sports: React.FC = () => {
                 </div>
             )}
          </div>
-      )}
-
-      {/* Source Selection Modal */}
-      {selectedMatchForSource && (
-        <div className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] w-full max-w-sm rounded-xl shadow-2xl overflow-hidden">
-                <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-hover)]">
-                    <h3 className="font-bold text-[var(--text-main)] flex items-center gap-2 text-sm">
-                        <Radio className="w-4 h-4 text-blue-500" /> Select Stream
-                    </h3>
-                    <button onClick={() => setSelectedMatchForSource(null)} className="text-[var(--text-muted)] hover:text-[var(--text-main)]">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-                <div className="p-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                    {selectedMatchForSource.sources.map((s, i) => (
-                        <button
-                            key={i}
-                            onClick={() => handlePlay(s, selectedMatchForSource.title)}
-                            className="w-full text-left px-3 py-3 hover:bg-[var(--bg-input)] border-b border-[var(--border-color)] last:border-0 rounded transition-colors flex justify-between items-center group"
-                        >
-                            <span className="font-bold text-[var(--text-muted)] group-hover:text-[var(--text-main)] uppercase text-xs tracking-wider">
-                                {s.source}
-                            </span>
-                            <PlayCircle className="w-4 h-4 text-[var(--text-muted)] group-hover:text-blue-500" />
-                        </button>
-                    ))}
-                </div>
-            </div>
-        </div>
-      )}
-
-      {/* Player Modal */}
-      {isPlayerOpen && (
-          <div className="fixed inset-0 z-[80] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300 p-2 md:p-6">
-             <div className="w-full max-w-5xl flex justify-between items-center mb-4">
-                <div className="flex flex-col">
-                    <h3 className="text-white font-bold text-base md:text-lg line-clamp-1">{currentMatchTitle}</h3>
-                    <span className="text-xs text-red-500 font-bold uppercase flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span> Live
-                    </span>
-                </div>
-                <button onClick={closePlayer} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-all">
-                    <X className="w-5 h-5" />
-                </button>
-             </div>
-
-             <div className="w-full max-w-5xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10 relative">
-                {streamUrl ? (
-                     <iframe 
-                        src={streamUrl} 
-                        className="w-full h-full" 
-                        frameBorder="0" 
-                        allowFullScreen 
-                        allow="autoplay; encrypted-media"
-                        referrerPolicy="origin"
-                    ></iframe>
-                ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        {isLoadingStream ? (
-                            <>
-                                <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-                                <p className="text-gray-400 text-sm font-mono animate-pulse">CONNECTING...</p>
-                            </>
-                        ) : streamError ? (
-                             <div className="text-center p-6">
-                                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-                                <p className="text-white font-bold text-sm mb-2">Signal Lost</p>
-                                <p className="text-gray-400 text-xs">{streamError}</p>
-                                <button onClick={() => setIsPlayerOpen(false)} className="mt-4 bg-white text-black px-4 py-2 rounded text-xs font-bold">
-                                    Close
-                                </button>
-                             </div>
-                        ) : null}
-                    </div>
-                )}
-             </div>
-             
-             {streamUrl && (
-                 <a href={streamUrl} target="_blank" rel="noreferrer" className="mt-4 text-gray-500 hover:text-white text-xs flex items-center gap-2 transition-colors">
-                    <Maximize2 className="w-3 h-3" /> Open External
-                 </a>
-             )}
-          </div>
       )}
     </div>
   );
