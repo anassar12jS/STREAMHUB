@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trophy, Calendar, PlayCircle, AlertCircle, X, Clock, Zap, Loader2, Filter, Radio, Maximize2, Bell, BellRing, RadioReceiver } from 'lucide-react';
+import { Trophy, Calendar, PlayCircle, AlertCircle, X, Clock, Zap, Loader2, Filter, Radio, Maximize2, Bell, BellRing } from 'lucide-react';
 import { getAllMatches, getStreamUrl } from '../services/sports';
 import { SportsMatch, SportsMatchSource } from '../types';
 
-// Memoize TeamLogo to prevent expensive color calculation on every render
-const TeamLogo: React.FC<{ name: string, className?: string }> = React.memo(({ name, className = "w-8 h-8" }) => {
+const TeamLogo: React.FC<{ name: string, className?: string }> = ({ name, className = "w-8 h-8" }) => {
     // Generate a consistent color based on the name
     const getColor = (str: string) => {
         let hash = 0;
@@ -27,13 +26,13 @@ const TeamLogo: React.FC<{ name: string, className?: string }> = React.memo(({ n
 
     return (
         <div 
-            className={`rounded-full flex items-center justify-center text-white font-bold shadow-sm border border-white/10 shrink-0 ${className}`} 
+            className={`rounded-full flex items-center justify-center text-white font-bold shadow-sm border border-white/10 ${className}`} 
             style={{ backgroundColor: bg, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
         >
             {initials}
         </div>
     );
-});
+};
 
 export const Sports: React.FC = () => {
   const [matches, setMatches] = useState<SportsMatch[]>([]);
@@ -69,8 +68,8 @@ export const Sports: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Filtering & Logic
-  const { liveMatches, upcomingMatches } = useMemo(() => {
+  // Filtering & Sorting Logic
+  const processedData = useMemo(() => {
     const now = Date.now();
     
     // 1. Filter
@@ -78,22 +77,19 @@ export const Sports: React.FC = () => {
         ? matches 
         : matches.filter(m => m.category.toUpperCase() === activeCategory);
 
-    // 2. Sort by popularity/time
-    filtered.sort((a, b) => {
+    // 2. Sort: Live > Popular > Upcoming
+    return filtered.sort((a, b) => {
+        const aLive = a.date <= now;
+        const bLive = b.date <= now;
+        
+        if (aLive && !bLive) return -1;
+        if (!aLive && bLive) return 1;
+        
         if (a.popular && !b.popular) return -1;
         if (!a.popular && b.popular) return 1;
+        
         return a.date - b.date;
     });
-
-    const live: SportsMatch[] = [];
-    const upcoming: SportsMatch[] = [];
-
-    filtered.forEach(m => {
-        if (m.date <= now) live.push(m);
-        else upcoming.push(m);
-    });
-
-    return { liveMatches: live, upcomingMatches: upcoming };
   }, [matches, activeCategory]);
 
   // Extract & Prioritize Categories
@@ -183,204 +179,215 @@ export const Sports: React.FC = () => {
                   icon: "https://cdn-icons-png.flaticon.com/512/4221/4221484.png"
               });
           }, timeout);
+          
+          // Also notify at exact start time
+          setTimeout(() => {
+               new Notification("Match Started!", {
+                  body: `${match.title} is live now!`,
+                  icon: "https://cdn-icons-png.flaticon.com/512/4221/4221484.png"
+              });
+          }, diff);
       }
   };
 
-  const MatchCard: React.FC<{ match: SportsMatch, isLive?: boolean }> = React.memo(({ match, isLive }) => {
-      const dateObj = new Date(match.date);
-      const timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      const dateStr = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'});
-      const isNotified = notifiedMatches.includes(match.title);
-
-      return (
-        <div 
-            onClick={() => isLive && openSourceSelection(match)}
-            className={`group relative overflow-hidden rounded-xl transition-all duration-300 border ${
-                isLive 
-                    ? 'bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-hover)] border-blue-500/30 hover:border-blue-500/60 cursor-pointer hover:shadow-lg hover:shadow-blue-500/10' 
-                    : 'bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--text-muted)]'
-            }`}
-        >
-            <div className="p-3 sm:p-4 flex flex-col h-full gap-3">
-                {/* Header */}
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                         <span className="text-[var(--text-muted)] bg-[var(--bg-input)] px-1.5 py-0.5 rounded border border-[var(--border-color)]">
-                            {match.category}
-                         </span>
-                         {match.popular && !isLive && <Zap className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
-                    </div>
-                    
-                    {isLive ? (
-                        <span className="text-red-500 flex items-center gap-1 animate-pulse">
-                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span> LIVE
-                        </span>
-                    ) : (
-                        <span className="text-[var(--text-muted)]">{dateStr} • {timeStr}</span>
-                    )}
-                </div>
-
-                {/* Teams */}
-                <div className="flex items-center justify-between gap-2">
-                    {match.teams?.home && match.teams?.away ? (
-                        <>
-                            <div className="flex-1 flex flex-col items-center text-center gap-1.5 min-w-0">
-                                <TeamLogo name={match.teams.home.name} className="w-10 h-10 text-sm" />
-                                <span className={`text-xs font-bold leading-tight line-clamp-2 ${isLive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
-                                    {match.teams.home.name}
-                                </span>
-                            </div>
-                            
-                            <div className="text-[var(--text-muted)] font-black text-xs opacity-30">VS</div>
-
-                            <div className="flex-1 flex flex-col items-center text-center gap-1.5 min-w-0">
-                                <TeamLogo name={match.teams.away.name} className="w-10 h-10 text-sm" />
-                                <span className={`text-xs font-bold leading-tight line-clamp-2 ${isLive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
-                                    {match.teams.away.name}
-                                </span>
-                            </div>
-                        </>
-                    ) : (
-                        <h3 className="text-sm font-bold text-[var(--text-main)] line-clamp-2 text-center w-full">{match.title}</h3>
-                    )}
-                </div>
-
-                {/* Footer Action */}
-                <div className="pt-3 border-t border-[var(--border-color)] flex items-center justify-between">
-                     <span className="text-[10px] text-[var(--text-muted)] font-mono flex items-center gap-1">
-                        <RadioReceiver className="w-3 h-3" /> {match.sources.length} Stream{match.sources.length !== 1 ? 's' : ''}
-                     </span>
-                     
-                     {isLive ? (
-                         <button className="bg-[var(--text-main)] text-[var(--bg-main)] px-3 py-1 rounded text-xs font-bold flex items-center gap-1 hover:opacity-90">
-                            <PlayCircle className="w-3 h-3" /> Watch
-                         </button>
-                     ) : (
-                         <button 
-                            onClick={(e) => handleNotify(match, e)}
-                            disabled={isNotified}
-                            className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-colors border ${isNotified ? 'bg-[rgb(var(--primary-color))]/10 text-[rgb(var(--primary-color))] border-[rgb(var(--primary-color))]' : 'bg-[var(--bg-input)] text-[var(--text-muted)] border-transparent hover:text-[var(--text-main)]'}`}
-                        >
-                             {isNotified ? <BellRing className="w-3 h-3" /> : <Bell className="w-3 h-3" />}
-                             {isNotified ? 'Set' : 'Notify'}
-                        </button>
-                     )}
-                </div>
-            </div>
-        </div>
-      );
-  });
-
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 min-h-screen animate-fade-in">
+    <div className="max-w-7xl mx-auto px-4 py-8 min-h-screen animate-fade-in pb-20">
       
-      {/* Compact Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-900/20 shrink-0">
-               <Trophy className="w-5 h-5 text-white" />
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-10">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="bg-blue-600 p-2.5 rounded-lg shadow-lg shadow-blue-900/20">
+               <Trophy className="w-6 h-6 text-white" />
             </div>
-            <div>
-                <h2 className="text-2xl font-black text-[var(--text-main)] tracking-tight uppercase italic leading-none">Live Sports</h2>
-                <p className="text-[10px] text-[var(--text-muted)] font-medium">Real-time events dashboard</p>
-            </div>
+            <h2 className="text-4xl font-black text-[var(--text-main)] tracking-tight uppercase italic">NitroSports</h2>
+          </div>
+          <p className="text-[var(--text-muted)] font-medium pl-1">Real-time events dashboard</p>
         </div>
         
-        {/* Filter Pills */}
-        <div className="w-full md:w-auto overflow-x-auto no-scrollbar">
-            <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
-                {categories.map(cat => (
-                    <button
-                        key={cat}
-                        onClick={() => setActiveCategory(cat)}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-colors ${
-                            activeCategory === cat 
-                            ? 'bg-[var(--text-main)] text-[var(--bg-main)]' 
-                            : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-color)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]'
-                        }`}
-                    >
-                        {cat === 'ALL' ? 'All' : cat}
-                    </button>
-                ))}
+        <div className="flex items-center gap-3 bg-[var(--bg-card)] px-5 py-3 rounded-full border border-[var(--border-color)]">
+            <div className="relative">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
             </div>
+            <span className="text-[var(--text-main)] font-bold text-sm tracking-wider">LIVE FEED</span>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="sticky top-0 z-30 bg-[var(--bg-main)]/95 backdrop-blur-sm py-4 mb-8 -mx-4 px-4 border-b border-[var(--border-color)]">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <Filter className="w-5 h-5 text-[var(--text-muted)] shrink-0 mr-2" />
+            {categories.map(cat => (
+                <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-6 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300 transform hover:scale-105 ${
+                        activeCategory === cat 
+                        ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-[0_0_15px_rgba(255,255,255,0.3)]' 
+                        : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-color)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]'
+                    }`}
+                >
+                    {cat === 'ALL' ? 'ALL EVENTS' : cat}
+                </button>
+            ))}
         </div>
       </div>
 
       {/* Main Content */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-32">
-            <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-            <p className="text-[var(--text-muted)] text-xs font-mono animate-pulse">LOADING EVENTS...</p>
-        </div>
-      ) : matches.length === 0 ? (
-         <div className="text-center py-20 text-[var(--text-muted)] bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] border-dashed">
-            <Trophy className="w-12 h-12 mx-auto mb-2 opacity-20" />
-            <p>No matches found.</p>
-         </div>
-      ) : (
-         <div className="space-y-8">
-            {/* Live Section */}
-            {liveMatches.length > 0 && (
-                <div>
-                    <div className="flex items-center gap-2 mb-4 px-1">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        <h3 className="text-lg font-bold text-[var(--text-main)]">Live Now</h3>
-                        <span className="text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-card)] px-2 py-0.5 rounded-full border border-[var(--border-color)]">
-                            {liveMatches.length}
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {liveMatches.map((match, idx) => (
-                            <MatchCard key={`live-${idx}`} match={match} isLive={true} />
-                        ))}
-                    </div>
+      <div>
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-32">
+                    <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+                    <p className="text-[var(--text-muted)] text-sm font-mono animate-pulse">SYNCING DATA...</p>
                 </div>
-            )}
+            ) : processedData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-32 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] border-dashed">
+                    <Trophy className="w-16 h-16 text-[var(--text-muted)] mb-4" />
+                    <p className="text-[var(--text-muted)] font-medium">No matches found for this category.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {processedData.map((match, idx) => {
+                        const isLive = match.date <= Date.now();
+                        const dateObj = new Date(match.date);
+                        const timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        const dateStr = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'});
+                        const isNotified = notifiedMatches.includes(match.title);
 
-            {/* Upcoming Section */}
-            {upcomingMatches.length > 0 && (
-                <div>
-                     <div className="flex items-center gap-2 mb-4 px-1 mt-8 pt-8 border-t border-[var(--border-color)]">
-                        <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
-                        <h3 className="text-lg font-bold text-[var(--text-main)]">Upcoming</h3>
-                        <span className="text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-card)] px-2 py-0.5 rounded-full border border-[var(--border-color)]">
-                            {upcomingMatches.length}
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                        {upcomingMatches.map((match, idx) => (
-                             <MatchCard key={`up-${idx}`} match={match} isLive={false} />
-                        ))}
-                    </div>
+                        return (
+                            <div 
+                                key={idx}
+                                onClick={() => isLive && openSourceSelection(match)}
+                                className={`group relative overflow-hidden rounded-2xl transition-all duration-300 ${
+                                    isLive 
+                                        ? 'bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-hover)] border border-blue-500/30 hover:border-blue-500/60 cursor-pointer hover:shadow-[0_0_30px_rgba(59,130,246,0.15)]' 
+                                        : 'bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--border-color)]'
+                                }`}
+                            >
+                                {/* Live Indicator Glow */}
+                                {isLive && <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-[50px] rounded-full pointer-events-none -mr-10 -mt-10"></div>}
+
+                                <div className="relative p-6 flex flex-col h-full justify-between gap-6">
+                                    
+                                    {/* Top Row: Meta */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <span className="bg-[var(--bg-input)] text-[var(--text-muted)] border border-[var(--border-color)] px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest">
+                                                {match.category}
+                                            </span>
+                                            {match.popular && (
+                                                <span className="flex items-center gap-1 text-yellow-500 text-[10px] font-bold uppercase tracking-wider">
+                                                    <Zap className="w-3 h-3 fill-yellow-500" /> Top Pick
+                                                </span>
+                                            )}
+                                        </div>
+                                        
+                                        {isLive ? (
+                                            <div className="flex items-center gap-2 bg-red-600/10 border border-red-600/20 px-3 py-1 rounded-full">
+                                                <span className="relative flex h-2 w-2">
+                                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                                </span>
+                                                <span className="text-red-500 text-[10px] font-black uppercase tracking-widest">Live Now</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                                                <Calendar className="w-3.5 h-3.5" />
+                                                <span className="text-xs font-bold">{dateStr} • {timeStr}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Teams Center */}
+                                    <div className="flex items-center justify-between gap-4">
+                                        {match.teams?.home && match.teams?.away ? (
+                                            <>
+                                                <div className="flex-1 flex flex-col items-center text-center sm:items-start sm:text-left gap-2">
+                                                    <TeamLogo name={match.teams.home.name} className="w-12 h-12 sm:w-10 sm:h-10 text-lg" />
+                                                    <h3 className={`font-black leading-tight uppercase ${isLive ? 'text-[var(--text-main)] text-lg md:text-xl' : 'text-[var(--text-muted)] text-base'}`}>
+                                                        {match.teams.home.name}
+                                                    </h3>
+                                                </div>
+                                                
+                                                <div className="shrink-0 flex flex-col items-center justify-center w-12">
+                                                    <span className="text-[var(--text-muted)] font-black text-2xl italic opacity-50">VS</span>
+                                                </div>
+
+                                                <div className="flex-1 flex flex-col items-center text-center sm:items-end sm:text-right gap-2">
+                                                    <TeamLogo name={match.teams.away.name} className="w-12 h-12 sm:w-10 sm:h-10 text-lg" />
+                                                    <h3 className={`font-black leading-tight uppercase ${isLive ? 'text-[var(--text-main)] text-lg md:text-xl' : 'text-[var(--text-muted)] text-base'}`}>
+                                                        {match.teams.away.name}
+                                                    </h3>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <h3 className="text-xl font-bold text-[var(--text-main)]">{match.title}</h3>
+                                        )}
+                                    </div>
+
+                                    {/* Bottom Row: Action */}
+                                    <div className="pt-4 border-t border-[var(--border-color)] flex items-center justify-between">
+                                        <div className="text-xs text-[var(--text-muted)] font-mono">
+                                            {match.sources.length} Source{match.sources.length !== 1 && 's'} Available
+                                        </div>
+                                        
+                                        {isLive ? (
+                                            <button className="bg-[var(--text-main)] text-[var(--bg-main)] px-6 py-2 rounded font-bold text-sm flex items-center gap-2 group-hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                                                <PlayCircle className="w-4 h-4" /> WATCH
+                                            </button>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={(e) => handleNotify(match, e)}
+                                                    disabled={isNotified}
+                                                    className={`px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-colors border ${isNotified ? 'bg-[rgb(var(--primary-color))]/20 text-[rgb(var(--primary-color))] border-[rgb(var(--primary-color))]' : 'bg-transparent text-[var(--text-muted)] border-[var(--border-color)] hover:text-[var(--text-main)] hover:border-[var(--text-main)]'}`}
+                                                >
+                                                    {isNotified ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                                                    {isNotified ? 'SET' : 'NOTIFY'}
+                                                </button>
+                                                <button disabled className="bg-[var(--bg-hover)] text-[var(--text-muted)] px-4 py-2 rounded font-bold text-sm flex items-center gap-2 cursor-not-allowed opacity-50">
+                                                    <Clock className="w-4 h-4" /> SOON
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
-         </div>
-      )}
+      </div>
 
       {/* Source Selection Modal */}
       {selectedMatchForSource && (
         <div className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] w-full max-w-sm rounded-xl shadow-2xl overflow-hidden">
-                <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-hover)]">
-                    <h3 className="font-bold text-[var(--text-main)] flex items-center gap-2 text-sm">
-                        <Radio className="w-4 h-4 text-blue-500" /> Select Stream
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-100">
+                <div className="p-5 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-hover)]">
+                    <h3 className="font-bold text-[var(--text-main)] flex items-center gap-2">
+                        <Radio className="w-5 h-5 text-blue-500" /> Select Source
                     </h3>
-                    <button onClick={() => setSelectedMatchForSource(null)} className="text-[var(--text-muted)] hover:text-[var(--text-main)]">
+                    <button onClick={() => setSelectedMatchForSource(null)} className="bg-black/50 hover:bg-red-500/20 hover:text-red-500 p-1.5 rounded-full text-gray-400 transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="p-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div className="p-2 max-h-[60vh] overflow-y-auto">
                     {selectedMatchForSource.sources.map((s, i) => (
                         <button
                             key={i}
                             onClick={() => handlePlay(s, selectedMatchForSource.title)}
-                            className="w-full text-left px-3 py-3 hover:bg-[var(--bg-input)] border-b border-[var(--border-color)] last:border-0 rounded transition-colors flex justify-between items-center group"
+                            className="w-full text-left px-4 py-4 hover:bg-blue-600/10 border-b border-[var(--border-color)] last:border-0 group transition-colors flex justify-between items-center"
                         >
-                            <span className="font-bold text-[var(--text-muted)] group-hover:text-[var(--text-main)] uppercase text-xs tracking-wider">
+                            <span className="font-bold text-[var(--text-muted)] group-hover:text-blue-400 uppercase text-sm tracking-wider">
                                 {s.source}
                             </span>
-                            <PlayCircle className="w-4 h-4 text-[var(--text-muted)] group-hover:text-blue-500" />
+                            <div className="flex items-center gap-3">
+                                <span className="text-[10px] bg-[var(--bg-input)] text-[var(--text-muted)] px-2 py-1 rounded font-mono">
+                                    ID: {s.id}
+                                </span>
+                                <PlayCircle className="w-4 h-4 text-[var(--text-muted)] group-hover:text-blue-500" />
+                            </div>
                         </button>
                     ))}
                 </div>
@@ -388,44 +395,51 @@ export const Sports: React.FC = () => {
         </div>
       )}
 
-      {/* Player Modal */}
+      {/* Player Modal (Pop-up) */}
       {isPlayerOpen && (
-          <div className="fixed inset-0 z-[80] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300 p-2 md:p-6">
+          <div className="fixed inset-0 z-[80] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300 p-4 md:p-8">
+             
+             {/* Header */}
              <div className="w-full max-w-5xl flex justify-between items-center mb-4">
                 <div className="flex flex-col">
-                    <h3 className="text-white font-bold text-base md:text-lg line-clamp-1">{currentMatchTitle}</h3>
+                    <h3 className="text-white font-bold text-lg md:text-xl line-clamp-1">{currentMatchTitle}</h3>
                     <span className="text-xs text-red-500 font-bold uppercase flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span> Live
+                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Live Stream
                     </span>
                 </div>
-                <button onClick={closePlayer} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-all">
-                    <X className="w-5 h-5" />
+                <button 
+                    onClick={closePlayer}
+                    className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-all hover:rotate-90"
+                >
+                    <X className="w-6 h-6" />
                 </button>
              </div>
 
-             <div className="w-full max-w-5xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10 relative">
+             {/* Player Container */}
+             <div className="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative group">
                 {streamUrl ? (
                      <iframe 
                         src={streamUrl} 
-                        className="w-full h-full" 
+                        className="w-full h-full"
                         frameBorder="0" 
                         allowFullScreen 
-                        allow="autoplay; encrypted-media"
+                        allow="autoplay; encrypted-media; picture-in-picture"
                         referrerPolicy="origin"
+                        loading="eager"
                     ></iframe>
                 ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                         {isLoadingStream ? (
                             <>
-                                <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-                                <p className="text-gray-400 text-sm font-mono animate-pulse">CONNECTING...</p>
+                                <Loader2 className="w-16 h-16 text-blue-600 animate-spin mb-6" />
+                                <p className="text-gray-300 font-bold text-lg animate-pulse">Initial Handshake...</p>
                             </>
                         ) : streamError ? (
                              <div className="text-center p-6">
-                                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-                                <p className="text-white font-bold text-sm mb-2">Signal Lost</p>
-                                <p className="text-gray-400 text-xs">{streamError}</p>
-                                <button onClick={() => setIsPlayerOpen(false)} className="mt-4 bg-white text-black px-4 py-2 rounded text-xs font-bold">
+                                <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                                <p className="text-white font-bold text-lg mb-2">Signal Lost</p>
+                                <p className="text-gray-400">{streamError}</p>
+                                <button onClick={() => setIsPlayerOpen(false)} className="mt-6 bg-white text-black px-6 py-2 rounded font-bold">
                                     Close
                                 </button>
                              </div>
@@ -433,14 +447,23 @@ export const Sports: React.FC = () => {
                     </div>
                 )}
              </div>
-             
-             {streamUrl && (
-                 <a href={streamUrl} target="_blank" rel="noreferrer" className="mt-4 text-gray-500 hover:text-white text-xs flex items-center gap-2 transition-colors">
-                    <Maximize2 className="w-3 h-3" /> Open External
-                 </a>
-             )}
+
+             {/* Footer */}
+             <div className="mt-4 flex gap-4">
+                 {streamUrl && (
+                     <a 
+                        href={streamUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-gray-500 hover:text-white text-sm flex items-center gap-2 transition-colors"
+                     >
+                        <Maximize2 className="w-4 h-4" /> Open in New Tab
+                     </a>
+                 )}
+             </div>
           </div>
       )}
+
     </div>
   );
 };
