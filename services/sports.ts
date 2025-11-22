@@ -26,6 +26,24 @@ const fetchApi = async (endpoint: string) => {
   }
 };
 
+const formatPosterUrl = (path: string) => {
+    if (!path) return undefined;
+    let finalUrl = '';
+    
+    if (path.startsWith('http')) {
+        finalUrl = path;
+    } else if (path.startsWith('/')) {
+        // Handle relative paths from API (e.g., /images/proxy/xyz)
+        finalUrl = `https://streamed.pk${path}.webp`;
+    } else {
+        // Handle ID only (e.g., ufc-299)
+        finalUrl = `${IMG_BASE}/proxy/${path}.webp`;
+    }
+
+    // Wrap in proxy to ensure it loads without hotlink protection
+    return `${PROXY_URL}${encodeURIComponent(finalUrl)}`;
+};
+
 export const getAllMatches = async (): Promise<SportsMatch[]> => {
   try {
     // Use 'all' instead of 'all-today' to show a broader schedule
@@ -45,8 +63,8 @@ export const getAllMatches = async (): Promise<SportsMatch[]> => {
 
         return {
             ...match,
-            // Construct poster URL using the proxy endpoint
-            poster: match.poster ? `${IMG_BASE}/proxy/${match.poster}.webp` : undefined,
+            // Construct poster URL robustly
+            poster: match.poster ? formatPosterUrl(match.poster) : undefined,
             teams: match.teams ? {
                 home: mapTeam(match.teams.home),
                 away: mapTeam(match.teams.away)
