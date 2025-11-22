@@ -1,5 +1,5 @@
 
-import { SportsMatch } from '../types';
+import { SportsMatch, SportsStream } from '../types';
 
 const PROXY_URL = 'https://corsproxy.io/?';
 const API_BASE = 'https://streamed.pk/api';
@@ -77,22 +77,27 @@ export const getAllMatches = async (): Promise<SportsMatch[]> => {
   }
 };
 
-export const getStreamUrl = async (source: string, id: string): Promise<string | null> => {
+export const getMatchStreams = async (source: string, id: string): Promise<SportsStream[]> => {
   try {
     const safeSource = source.toLowerCase();
     const safeId = encodeURIComponent(id);
     
     const data = await fetchApi(`/stream/${safeSource}/${safeId}`);
     
-    if (!Array.isArray(data) || !data.length) {
-       throw new Error('Empty playlist');
+    if (!Array.isArray(data)) {
+       return [];
     }
 
-    // Prefer HD stream, otherwise take first
-    const stream = data.find((s: any) => s.hd) || data[0];
-    return stream.embedUrl || null;
+    return data.map((s: any, index: number) => ({
+        id: `${source}-${id}-${index}`,
+        streamNo: index + 1,
+        language: 'English', // API often defaults to English without explicit field
+        hd: !!s.hd,
+        embedUrl: s.embedUrl,
+        source: source
+    }));
   } catch (e) {
-    console.error("Failed to resolve stream:", e);
-    return null;
+    console.error("Failed to resolve streams:", e);
+    return [];
   }
 };
