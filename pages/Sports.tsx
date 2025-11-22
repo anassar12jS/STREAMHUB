@@ -169,6 +169,75 @@ export const Sports: React.FC<SportsProps> = ({ onPlay }) => {
       const dateStr = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'});
       const isNotified = notifiedMatches.includes(match.title);
 
+      // 1. POSTER LAYOUT (Featured Events / UFC / Boxing)
+      if (match.poster) {
+        return (
+            <div 
+                onClick={() => isLive && onPlay(match)}
+                className={`group relative overflow-hidden rounded-xl border border-[var(--border-color)] transition-all duration-300 aspect-video sm:aspect-[2/1] ${
+                    isLive 
+                        ? 'cursor-pointer hover:shadow-lg hover:shadow-[rgb(var(--primary-color))]/20 hover:border-[rgb(var(--primary-color))]' 
+                        : ''
+                }`}
+            >
+                {/* Background Image */}
+                <div className="absolute inset-0">
+                    <img 
+                        src={match.poster} 
+                        alt={match.title} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                        loading="lazy" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] via-black/40 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent opacity-60"></div>
+                </div>
+
+                {/* Content Overlay */}
+                <div className="absolute inset-0 p-4 flex flex-col justify-between z-10">
+                    {/* Top Bar */}
+                    <div className="flex justify-between items-start">
+                        <span className="bg-black/40 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded border border-white/10 uppercase tracking-wider">
+                            {match.category}
+                        </span>
+                        {isLive && (
+                            <span className="bg-red-600/90 text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 animate-pulse shadow-lg shadow-red-900/20">
+                                <span className="w-1.5 h-1.5 bg-white rounded-full"></span> LIVE
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Bottom Info */}
+                    <div className="mt-auto">
+                        <h3 className="text-white font-black text-xl md:text-2xl leading-none drop-shadow-lg text-center mb-3 uppercase italic">
+                            {match.title}
+                        </h3>
+                        
+                        <div className="flex items-center justify-between border-t border-white/10 pt-3">
+                            <span className="text-xs font-bold text-gray-200 shadow-black drop-shadow-md">
+                                {isLive ? 'Streaming Now' : `${dateStr} • ${timeStr}`}
+                            </span>
+
+                            {isLive ? (
+                                <button className="bg-[rgb(var(--primary-color))] text-white px-4 py-1.5 rounded-full text-xs font-bold hover:scale-105 transition-transform shadow-lg shadow-[rgb(var(--primary-color))]/20 flex items-center gap-1">
+                                    <PlayCircle className="w-3.5 h-3.5" /> Watch
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={(e) => handleNotify(match, e)}
+                                    className={`px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-colors border backdrop-blur-md ${isNotified ? 'bg-white text-black border-white' : 'bg-black/40 text-white border-white/20 hover:bg-white/10'}`}
+                                >
+                                    {isNotified ? <BellRing className="w-3 h-3" /> : <Bell className="w-3 h-3" />}
+                                    {isNotified ? 'Set' : 'Notify'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+      }
+
+      // 2. STANDARD MATCH CARD (Teams / Football / etc)
       return (
         <div 
             onClick={() => isLive && onPlay(match)}
