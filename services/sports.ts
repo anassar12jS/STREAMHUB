@@ -3,46 +3,56 @@ import { SportsMatch } from '../types';
 
 const PROXY_URL = 'https://corsproxy.io/?';
 const API_BASE = 'https://streamed.pk/api';
+const IMG_BASE = 'https://streamed.pk/api/images';
 
-// Helper to fetch api
+// Helper to fetch via proxy
 const fetchApi = async (endpoint: string) => {
   const targetUrl = `${API_BASE}${endpoint}`;
+  const url = `${PROXY_URL}${encodeURIComponent(targetUrl)}`;
   
-  // 1. Try Direct Fetch first (Fastest, lowest latency)
   try {
-    // Use a short timeout for direct fetch to fail fast if it hangs
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-    const res = await fetch(targetUrl, { 
-        signal: controller.signal 
-    });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-        return await res.json();
-    }
-  } catch (e) {
-    // Silently fail direct fetch (CORS, Network Error, etc) and proceed to proxy
-    // console.warn("Direct fetch failed, falling back to proxy", e);
-  }
-
-  // 2. Fallback to Proxy (Slower but reliable if CORS is blocked)
-  try {
-    const url = `${PROXY_URL}${encodeURIComponent(targetUrl)}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (e) {
-    // If proxy fails, propagate error
-    throw e;
+    // Fallback: Try fetching directly in case CORS is allowed or proxy fails
+    try {
+        const directRes = await fetch(targetUrl);
+        if (!directRes.ok) throw new Error('Direct fetch failed');
+        return await directRes.json();
+    } catch (err) {
+        throw e;
+    }
   }
 };
 
 export const getAllMatches = async (): Promise<SportsMatch[]> => {
   try {
-    const data = await fetchApi('/matches/all-today');
-    return Array.isArray(data) ? data : [];
+    // Use 'all' instead of 'all-today' to show a broader schedule
+    const data = await fetchApi('/matches/all');
+    if (!Array.isArray(data)) return [];
+
+    return data.map((match: any) => {
+        // Helper to map team data including badge URL construction
+        const mapTeam = (team: any) => {
+            if (!team) return undefined;
+            return {
+                name: team.name,
+                // Construct the badge URL according to API docs
+                logo: team.badge ? `${IMG_BASE}/badge/${team.badge}.webp` : undefined
+            };
+        };
+
+        return {
+            ...match,
+            // Construct poster URL using the proxy endpoint
+            poster: match.poster ? `${IMG_BASE}/proxy/${match.poster}.webp` : undefined,
+            teams: match.teams ? {
+                home: mapTeam(match.teams.home),
+                away: mapTeam(match.teams.away)
+            } : undefined
+        };
+    });
   } catch (e) {
     console.error("Failed to fetch matches:", e);
     return [];
