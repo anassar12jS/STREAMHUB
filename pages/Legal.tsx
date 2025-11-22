@@ -21,9 +21,6 @@ const LegalLayout: React.FC<{ title: string; icon: React.ElementType; children: 
           <p className="text-xl md:text-2xl font-black text-[var(--text-main)] italic tracking-wide leading-relaxed">
             "If buying isn't owning, then piracy isn't stealing."
           </p>
-          <footer className="mt-2 text-sm text-[rgb(var(--primary-color))] font-bold uppercase tracking-widest opacity-80">
-            — StreamHub Philosophy
-          </footer>
         </blockquote>
       </div>
     </div>
