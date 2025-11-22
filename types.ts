@@ -119,6 +119,15 @@ export interface SportsMatch {
   popular?: boolean;
 }
 
+export interface SportsStream {
+  id: string;
+  streamNo: number;
+  language: string;
+  hd: boolean;
+  embedUrl: string;
+  source: string;
+}
+
 export interface WebtorOptions {
   id: string;
   magnet: string;
