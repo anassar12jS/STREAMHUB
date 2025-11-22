@@ -9,7 +9,7 @@ interface SportsProps {
 }
 
 // Memoize TeamLogo to prevent expensive color calculation on every render
-const TeamLogo: React.FC<{ name: string, logo?: string, className?: string }> = React.memo(({ name, logo, className = "w-8 h-8" }) => {
+const TeamLogo: React.FC<{ name: string, logo?: string, className?: string }> = React.memo(({ name, logo, className = "w-12 h-12" }) => {
     const [imgError, setImgError] = useState(false);
 
     // Generate a consistent color based on the name (Fallback)
@@ -24,13 +24,14 @@ const TeamLogo: React.FC<{ name: string, logo?: string, className?: string }> = 
 
     if (logo && !imgError) {
         return (
-            <div className={`rounded-full flex items-center justify-center bg-white/5 border border-white/10 shrink-0 overflow-hidden relative ${className}`}>
+            <div className={`rounded-full flex items-center justify-center bg-white/10 border border-white/10 shrink-0 overflow-hidden relative ${className}`}>
                 <img 
                     src={logo} 
                     alt={name} 
                     className="w-full h-full object-contain p-0.5" 
                     loading="lazy" 
                     onError={() => setImgError(true)} 
+                    referrerPolicy="no-referrer"
                 />
             </div>
         );
@@ -168,9 +169,10 @@ export const Sports: React.FC<SportsProps> = ({ onPlay }) => {
       const timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
       const dateStr = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'});
       const isNotified = notifiedMatches.includes(match.title);
+      const [posterFailed, setPosterFailed] = useState(false);
 
       // 1. POSTER LAYOUT (Featured Events / UFC / Boxing)
-      if (match.poster) {
+      if (match.poster && !posterFailed) {
         return (
             <div 
                 onClick={() => isLive && onPlay(match)}
@@ -187,6 +189,8 @@ export const Sports: React.FC<SportsProps> = ({ onPlay }) => {
                         alt={match.title} 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                         loading="lazy" 
+                        onError={() => setPosterFailed(true)}
+                        referrerPolicy="no-referrer"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] via-black/40 to-transparent"></div>
                     <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent opacity-60"></div>
@@ -270,17 +274,17 @@ export const Sports: React.FC<SportsProps> = ({ onPlay }) => {
                 <div className="flex items-center justify-between gap-2">
                     {match.teams?.home && match.teams?.away ? (
                         <>
-                            <div className="flex-1 flex flex-col items-center text-center gap-1.5 min-w-0">
-                                <TeamLogo name={match.teams.home.name} logo={match.teams.home.logo} className="w-10 h-10 text-sm" />
+                            <div className="flex-1 flex flex-col items-center text-center gap-2 min-w-0">
+                                <TeamLogo name={match.teams.home.name} logo={match.teams.home.logo} className="w-12 h-12 text-base" />
                                 <span className={`text-xs font-bold leading-tight line-clamp-2 ${isLive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
                                     {match.teams.home.name}
                                 </span>
                             </div>
                             
-                            <div className="text-[var(--text-muted)] font-black text-xs opacity-30">VS</div>
+                            <div className="text-[var(--text-muted)] font-black text-xs opacity-30 pb-4">VS</div>
 
-                            <div className="flex-1 flex flex-col items-center text-center gap-1.5 min-w-0">
-                                <TeamLogo name={match.teams.away.name} logo={match.teams.away.logo} className="w-10 h-10 text-sm" />
+                            <div className="flex-1 flex flex-col items-center text-center gap-2 min-w-0">
+                                <TeamLogo name={match.teams.away.name} logo={match.teams.away.logo} className="w-12 h-12 text-base" />
                                 <span className={`text-xs font-bold leading-tight line-clamp-2 ${isLive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
                                     {match.teams.away.name}
                                 </span>
