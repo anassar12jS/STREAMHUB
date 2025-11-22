@@ -7,7 +7,7 @@ import { TMDB_IMAGE_BASE, TMDB_POSTER_BASE } from '../constants';
 import { StreamList } from '../components/StreamList';
 import { MediaCard } from '../components/MediaCard';
 import { Footer } from '../components/Footer';
-import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions, ChevronUp, ChevronDown, Layers, Zap, Play } from 'lucide-react';
+import { ArrowLeft, Star, Youtube, PlayCircle, Tv, Film, X, Server, AlertCircle, Download, Info, Plus, Check, Sparkles, Captions, ChevronUp, ChevronDown, Layers, Zap, Play, Share2 } from 'lucide-react';
 
 interface DetailsProps {
   item: TMDBResult;
@@ -22,6 +22,7 @@ type ActiveSection = 'none' | 'player' | 'downloads';
 export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, onNavigate }) => {
   const [detail, setDetail] = useState<TMDBDetail | null>(null);
   const [trailer, setTrailer] = useState<TMDBVideo | null>(null);
+  const [showTrailerModal, setShowTrailerModal] = useState(false);
   const [recommendations, setRecommendations] = useState<TMDBResult[]>([]);
   const [collection, setCollection] = useState<Collection | null>(null);
   const [streams, setStreams] = useState<Stream[]>([]);
@@ -120,6 +121,24 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
     }, 100);
   };
 
+  const handleShare = async () => {
+      if (navigator.share) {
+          try {
+              await navigator.share({
+                  title: detail?.title || detail?.name,
+                  text: `Check out ${detail?.title || detail?.name} on StreamHub!`,
+                  url: window.location.href,
+              });
+          } catch (err) {
+              console.error("Error sharing:", err);
+          }
+      } else {
+          // Fallback: Copy to clipboard
+          navigator.clipboard.writeText(window.location.href);
+          alert("Link copied to clipboard!");
+      }
+  };
+
   const getEmbedUrl = () => {
     const tmdbId = item.id;
     const imdbId = detail?.external_ids?.imdb_id;
@@ -187,6 +206,15 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
       if (detail?.external_ids?.imdb_id) {
           window.open(`https://www.opensubtitles.org/en/search/imdbid-${detail.external_ids.imdb_id.replace('tt', '')}`, '_blank');
       }
+  };
+
+  const getEpisodeCount = (seasonNum: number) => {
+    const seasons = (detail as any)?.seasons;
+    if (Array.isArray(seasons)) {
+        const season = seasons.find((s: any) => s.season_number === seasonNum);
+        return season?.episode_count || 24;
+    }
+    return 24;
   };
 
   if (!detail) {
@@ -338,17 +366,24 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                          </button>
 
                          {trailer && (
-                             <a 
-                                href={`https://www.youtube.com/watch?v=${trailer.key}`} 
-                                target="_blank" 
-                                rel="noreferrer"
+                             <button 
+                                onClick={() => setShowTrailerModal(true)}
                                 className="flex-1 sm:w-16 flex flex-col items-center justify-center gap-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-red-500 hover:border-red-500/50 hover:bg-red-500/5 transition-all"
                                 title="Watch Trailer"
                              >
                                 <Youtube className="w-5 h-5" />
                                 <span className="text-[10px] font-bold uppercase">Trailer</span>
-                             </a>
+                             </button>
                          )}
+
+                         <button 
+                            onClick={handleShare}
+                            className="flex-1 sm:w-16 flex flex-col items-center justify-center gap-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-hover)] transition-all"
+                            title="Share"
+                         >
+                            <Share2 className="w-5 h-5" />
+                            <span className="text-[10px] font-bold uppercase">Share</span>
+                         </button>
                      </div>
                 </div>
 
@@ -403,15 +438,22 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                                     <div className="flex flex-wrap gap-4 mb-2 bg-[var(--bg-input)]/50 p-3 rounded-xl border border-[var(--border-color)]">
                                         <div className="flex items-center gap-2">
                                             <Tv className="w-4 h-4 text-[var(--text-muted)]" />
-                                            <select value={selectedSeason} onChange={(e) => setSelectedSeason(parseInt(e.target.value))} className="bg-transparent font-bold text-[var(--text-main)] outline-none cursor-pointer">
+                                            <select value={selectedSeason} onChange={(e) => { setSelectedSeason(parseInt(e.target.value)); setSelectedEpisode(1); }} className="bg-transparent font-bold text-[var(--text-main)] outline-none cursor-pointer">
                                                 {[...Array(detail.number_of_seasons || 1)].map((_, i) => <option key={i} value={i + 1} className="bg-[var(--bg-card)]">Season {i + 1}</option>)}
                                             </select>
                                         </div>
                                         <div className="w-px h-6 bg-[var(--border-color)] mx-2"></div>
                                         <div className="flex items-center gap-2">
-                                            <button onClick={() => setSelectedEpisode(Math.max(1, selectedEpisode - 1))} disabled={selectedEpisode <= 1} className="hover:text-[rgb(var(--primary-color))] disabled:opacity-30 transition-colors"><ArrowLeft className="w-4 h-4" /></button>
-                                            <span className="font-bold text-[var(--text-main)] min-w-[80px] text-center">Episode {selectedEpisode}</span>
-                                            <button onClick={() => setSelectedEpisode(selectedEpisode + 1)} className="hover:text-[rgb(var(--primary-color))] transition-colors"><ArrowLeft className="w-4 h-4 rotate-180" /></button>
+                                             <span className="text-xs font-bold text-[var(--text-muted)] uppercase mr-2">Episode:</span>
+                                             <select 
+                                                value={selectedEpisode} 
+                                                onChange={(e) => setSelectedEpisode(parseInt(e.target.value))}
+                                                className="bg-transparent font-bold text-[var(--text-main)] outline-none cursor-pointer"
+                                             >
+                                                {[...Array(getEpisodeCount(selectedSeason))].map((_, i) => (
+                                                    <option key={i} value={i + 1} className="bg-[var(--bg-card)]">Episode {i + 1}</option>
+                                                ))}
+                                             </select>
                                         </div>
                                     </div>
                                 )}
@@ -480,14 +522,19 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
                                  
                                  {item.media_type === MediaType.TV && (
                                     <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card)] flex flex-wrap gap-4 items-center">
-                                         <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Select Episode:</span>
-                                         <select value={selectedSeason} onChange={(e) => setSelectedSeason(parseInt(e.target.value))} className="bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] text-sm rounded-lg px-3 py-1.5 outline-none">
-                                                {[...Array(detail.number_of_seasons || 1)].map((_, i) => <option key={i} value={i + 1}>Season {i + 1}</option>)}
-                                         </select>
-                                         <div className="flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg p-1">
-                                             <button onClick={() => setSelectedEpisode(Math.max(1, selectedEpisode - 1))} disabled={selectedEpisode <= 1} className="p-1 hover:text-[rgb(var(--primary-color))] disabled:opacity-30"><ArrowLeft className="w-4 h-4" /></button>
-                                             <span className="text-sm font-bold text-[var(--text-main)] w-8 text-center">{selectedEpisode}</span>
-                                             <button onClick={() => setSelectedEpisode(selectedEpisode + 1)} className="p-1 hover:text-[rgb(var(--primary-color))]"><ArrowLeft className="w-4 h-4 rotate-180" /></button>
+                                         <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Select:</span>
+                                         <div className="flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg px-3 py-1.5">
+                                             <select value={selectedSeason} onChange={(e) => { setSelectedSeason(parseInt(e.target.value)); setSelectedEpisode(1); }} className="bg-transparent text-[var(--text-main)] text-sm outline-none cursor-pointer">
+                                                    {[...Array(detail.number_of_seasons || 1)].map((_, i) => <option key={i} value={i + 1} className="bg-[var(--bg-card)]">Season {i + 1}</option>)}
+                                             </select>
+                                         </div>
+                                         
+                                         <div className="flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg px-3 py-1.5">
+                                              <select value={selectedEpisode} onChange={(e) => setSelectedEpisode(parseInt(e.target.value))} className="bg-transparent text-[var(--text-main)] text-sm outline-none cursor-pointer">
+                                                  {[...Array(getEpisodeCount(selectedSeason))].map((_, i) => (
+                                                      <option key={i} value={i + 1} className="bg-[var(--bg-card)]">Episode {i + 1}</option>
+                                                  ))}
+                                              </select>
                                          </div>
                                     </div>
                                  )}
@@ -510,6 +557,27 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
             </div>
         </div>
         
+        {/* Trailer Modal */}
+        {showTrailerModal && trailer && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowTrailerModal(false)}>
+                <div className="relative w-full max-w-5xl aspect-video mx-4 bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/20">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setShowTrailerModal(false); }}
+                        className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full transition-colors backdrop-blur-md"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                    <iframe 
+                        src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0`} 
+                        className="w-full h-full" 
+                        frameBorder="0" 
+                        allow="autoplay; encrypted-media" 
+                        allowFullScreen
+                    ></iframe>
+                </div>
+            </div>
+        )}
+
         {collection && collection.parts.length > 0 && (
              <div className="mt-12 border-t border-[var(--border-color)] pt-10">
                 <div className="flex items-center gap-3 mb-6">
