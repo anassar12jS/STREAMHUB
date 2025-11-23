@@ -117,7 +117,6 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
 
   const activateSection = (section: ActiveSection) => {
     if (section === 'player') {
-        // Save progress when player opens
         saveProgress({
             id: item.id,
             media_type: item.media_type,
@@ -165,8 +164,8 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
  switch (server) {
       case 'vidsrc-wtf':
         return item.media_type === MediaType.MOVIE
-          ? `https://vidsrc.xyz/embed/movie/${tmdbId}`
-          : `https://vidsrc.xyz/embed/tv/${tmdbId}/${s}-${e}`;
+          ? `https://vidsrc.wtf/api/2/movie/${tmdbId}`
+          : `https://vidsrc.wtf/api/2/tv/${tmdbId}/${s}/${e}`;
       case 'vidsrc-cc':
          const vidsrcCcId = imdbId || tmdbId;
         return item.media_type === MediaType.MOVIE
@@ -605,6 +604,7 @@ export const Details: React.FC<DetailsProps> = ({ item, onBack, onPersonClick, o
         )}
       </div>
       
+      {/* Footer wrapped in relative z-10 to stack above the fixed background */}
       <div className="relative z-10 w-full">
         <Footer onNavigate={onNavigate} />
       </div>
